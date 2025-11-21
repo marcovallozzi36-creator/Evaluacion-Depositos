@@ -210,6 +210,7 @@
       padding: 6px 8px;
       border-bottom: 1px solid #e5e7eb;
       text-align: left;
+      vertical-align: middle;
     }
 
     th {
@@ -861,6 +862,17 @@
 
     let currentUser = null;
 
+    function openMainForUser(user) {
+      currentUser = user;
+      document.getElementById("user-name").textContent = user.name;
+      document.getElementById("user-role").textContent = user.role;
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("main-view").style.display = "block";
+      showTab("deposits");
+      loadDeposits();
+      loadOperators();
+    }
+
     window.fillDemoLogin = function () {
       const select = document.getElementById("login-user-select");
       const passInput = document.getElementById("login-password");
@@ -884,19 +896,14 @@
         return;
       }
 
-      currentUser = user;
-      document.getElementById("user-name").textContent = user.name;
-      document.getElementById("user-role").textContent = user.role;
-
-      document.getElementById("login-view").style.display = "none";
-      document.getElementById("main-view").style.display = "block";
-
-      loadDeposits();
-      loadOperators();
+      // guardo sesión en localStorage
+      localStorage.setItem("geo_eval_user_email", user.email);
+      openMainForUser(user);
     };
 
     window.logout = function () {
       currentUser = null;
+      localStorage.removeItem("geo_eval_user_email");
       document.getElementById("main-view").style.display = "none";
       document.getElementById("login-view").style.display = "block";
       document.getElementById("login-password").value = "";
@@ -940,7 +947,15 @@
             splash.style.pointerEvents = "none";
             setTimeout(() => {
               splash.style.display = "none";
-              document.getElementById("login-view").style.display = "block";
+
+              // Autologin si hay usuario guardado
+              const savedEmail = localStorage.getItem("geo_eval_user_email");
+              const savedUser = USERS.find((u) => u.email === savedEmail);
+              if (savedUser) {
+                openMainForUser(savedUser);
+              } else {
+                document.getElementById("login-view").style.display = "block";
+              }
             }, 300);
           }, 300);
         }
@@ -1077,11 +1092,20 @@
 
       try {
         showSync("Sincronizando pregunta con Firebase...");
+
+        // obtengo cuántas preguntas hay para definir el orden al final
+        const qRef = query(
+          collection(db, "questions"),
+          where("depositId", "==", depositId)
+        );
+        const snap = await getDocs(qRef);
+        const newOrder = snap.size;
+
         await addDoc(collection(db, "questions"), {
           depositId,
           text,
           maxPoints,
-          order: 0,
+          order: newOrder,
           active: true,
           createdAt: serverTimestamp()
         });
@@ -1111,14 +1135,28 @@
         );
         const snapshot = await getDocs(qRef);
 
+        const items = [];
         snapshot.forEach((snapDoc) => {
-          const q = snapDoc.data();
-          const id = snapDoc.id;
+          items.push({ id: snapDoc.id, ...snapDoc.data() });
+        });
+
+        // orden por campo "order" (si no hay, va al final)
+        items.sort((a, b) => {
+          const ao = typeof a.order === "number" ? a.order : 9999;
+          const bo = typeof b.order === "number" ? b.order : 9999;
+          return ao - bo;
+        });
+
+        items.forEach((q) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${q.text}</td>
+            <td style="white-space:pre-wrap;">${q.text}</td>
             <td>${q.maxPoints}</td>
-            <td><button class="btn-small btn-danger" onclick="deleteQuestion('${id}')">Borrar</button></td>
+            <td>
+              <button class="btn-small" onclick="moveQuestion('${q.id}','up')">↑</button>
+              <button class="btn-small" onclick="moveQuestion('${q.id}','down')">↓</button>
+              <button class="btn-small btn-danger" onclick="deleteQuestion('${q.id}')">Borrar</button>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -1137,6 +1175,64 @@
       } catch (err) {
         console.error("Error deleteQuestion:", err);
         alert("Error borrando pregunta.");
+      } finally {
+        hideSync();
+      }
+    };
+
+    // Reordenar preguntas ↑ / ↓
+    window.moveQuestion = async function (questionId, direction) {
+      const depositSelect = document.getElementById("question-deposit-select");
+      const depositId = depositSelect.value;
+      if (!depositId) return;
+
+      try {
+        showSync("Reordenando preguntas...");
+
+        const qRef = query(
+          collection(db, "questions"),
+          where("depositId", "==", depositId)
+        );
+        const snapshot = await getDocs(qRef);
+
+        const items = [];
+        snapshot.forEach((snapDoc) => {
+          const data = snapDoc.data();
+          items.push({
+            id: snapDoc.id,
+            order: typeof data.order === "number" ? data.order : 0,
+            ...data
+          });
+        });
+
+        // orden actual
+        items.sort((a, b) => a.order - b.order);
+        // reindexo limpio 0..n-1
+        items.forEach((it, idx) => {
+          it.order = idx;
+        });
+
+        const idx = items.findIndex((q) => q.id === questionId);
+        if (idx === -1) {
+          hideSync();
+          return;
+        }
+
+        const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (swapIdx < 0 || swapIdx >= items.length) {
+          hideSync();
+          return; // ya está en el extremo
+        }
+
+        const batch = writeBatch(db);
+        batch.update(doc(db, "questions", items[idx].id), { order: swapIdx });
+        batch.update(doc(db, "questions", items[swapIdx].id), { order: idx });
+        await batch.commit();
+
+        await loadQuestionsForSelectedDeposit();
+      } catch (err) {
+        console.error("Error moveQuestion:", err);
+        alert("Error reordenando preguntas.");
       } finally {
         hideSync();
       }
@@ -1270,10 +1366,19 @@
         let totalPossible = 0;
         let index = 1;
 
+        const items = [];
         snapshot.forEach((snapDoc) => {
-          const q = snapDoc.data();
-          const id = snapDoc.id;
-          evalQuestionsCache.push({ id, ...q });
+          items.push({ id: snapDoc.id, ...snapDoc.data() });
+        });
+
+        items.sort((a, b) => {
+          const ao = typeof a.order === "number" ? a.order : 9999;
+          const bo = typeof b.order === "number" ? b.order : 9999;
+          return ao - bo;
+        });
+
+        items.forEach((q) => {
+          evalQuestionsCache.push({ id: q.id, ...q });
           totalPossible += q.maxPoints;
 
           const tr = document.createElement("tr");
@@ -1283,7 +1388,7 @@
             <td>${q.maxPoints}</td>
             <td>
               <input type="number" min="0" step="0.1" max="${q.maxPoints}"
-                value="0" data-question-id="${id}" oninput="recalculateEvaluation()" />
+                value="0" data-question-id="${q.id}" oninput="recalculateEvaluation()" />
             </td>
           `;
           tbody.appendChild(tr);
@@ -1511,7 +1616,7 @@
           answers.push(aSnap.data());
         });
 
-        // ordenar por questionText para que quede prolijo
+        // ordenar por texto
         answers.sort((a, b) => (a.questionText || "").localeCompare(b.questionText || ""));
 
         const wrapper = document.getElementById("evaluation-detail-wrapper");
@@ -1776,3 +1881,4 @@
   </script>
 </body>
 </html>
+
