@@ -690,11 +690,11 @@
             </div>
           </div>
 
-          <!-- HISTORIAL DE EVALUACIONES + EXPORT PDF -->
+          <!-- HISTORIAL DE EVALUACIONES + EXPORT -->
           <div id="evaluations-history-block" class="mt-6">
             <h2>Historial de evaluaciones</h2>
             <p class="muted mb-2">
-              Consultá todas las evaluaciones guardadas. Podés filtrar por mes y exportar a PDF.
+              Consultá todas las evaluaciones guardadas. Podés filtrar por mes y exportar resúmenes o el detalle de una evaluación.
             </p>
 
             <div class="row mt-2">
@@ -706,7 +706,7 @@
                 <button class="secondary" onclick="loadEvaluationsHistory()">Buscar</button>
               </div>
               <div class="col-3" style="align-self:flex-end;">
-                <button onclick="exportEvaluationsPDF()">Exportar evaluaciones a PDF</button>
+                <button onclick="exportEvaluationsPDF()">Exportar listado a PDF</button>
               </div>
             </div>
 
@@ -721,10 +721,23 @@
                       <th>Puntaje obtenido</th>
                       <th>Puntaje posible</th>
                       <th>%</th>
+                      <th>Detalle</th>
                     </tr>
                   </thead>
                   <tbody id="evaluations-history-rows"></tbody>
                 </table>
+              </div>
+            </div>
+
+            <!-- DETALLE DE UNA EVALUACIÓN CON PREGUNTAS -->
+            <div id="evaluation-detail-wrapper" class="mt-4" style="display:none;">
+              <div class="row" style="justify-content:space-between; align-items:center;">
+                <h2 id="evaluation-detail-title">Detalle de evaluación</h2>
+                <button onclick="exportEvaluationDetailPDF()">Exportar evaluación a PDF</button>
+              </div>
+
+              <div id="evaluation-detail-pdf" class="mt-2">
+                <!-- Se llena por JS -->
               </div>
             </div>
           </div>
@@ -782,7 +795,7 @@
   <!-- Librería para exportar a PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- LÓGICA + FIREBASE (MODULAR 12.x) -->
+  <!-- LÓGICA + FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import {
@@ -798,12 +811,10 @@
       updateDoc,
       serverTimestamp,
       writeBatch,
-      limit
+      limit,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-    // ==============================
-    // FIREBASE CONFIG
-    // ==============================
     const firebaseConfig = {
       apiKey: "AIzaSyB46C16u-mEszandRusDbpH15uItifNNRE",
       authDomain: "evaluacion-depositos-rio2.firebaseapp.com",
@@ -817,7 +828,6 @@
     const db = getFirestore(app);
     console.log("Firebase inicializado OK");
 
-    // Helpers de sincronización
     function showSync(message = "Sincronizando con Firebase...") {
       const el = document.getElementById("sync-status");
       if (!el) return;
@@ -833,9 +843,7 @@
       el.style.pointerEvents = "none";
     }
 
-    // ==============================
     // LOGIN LOCAL
-    // ==============================
     const USERS = [
       {
         email: "luis.reynosa@georgalos.com.ar",
@@ -894,9 +902,7 @@
       document.getElementById("login-password").value = "";
     };
 
-    // ==============================
     // TABS
-    // ==============================
     window.showTab = function (tab) {
       const tabs = ["deposits", "operators", "evaluations", "bonuses"];
       tabs.forEach((t) => {
@@ -914,13 +920,11 @@
         loadOperators();
       } else if (tab === "evaluations") {
         loadDepositsIntoSelect("eval-deposit-select");
-        loadEvaluationsHistory(); // que siempre muestre algo
+        loadEvaluationsHistory();
       }
     };
 
-    // ==============================
     // SPLASH
-    // ==============================
     function startSplash() {
       const splash = document.getElementById("splash");
       const progress = document.getElementById("splash-progress");
@@ -947,9 +951,7 @@
       startSplash();
     });
 
-    // ==============================
     // DEPÓSITOS
-    // ==============================
     window.addDeposit = async function () {
       const nameInput = document.getElementById("deposit-name");
       const descInput = document.getElementById("deposit-description");
@@ -974,7 +976,7 @@
         alert("Depósito agregado.");
       } catch (err) {
         console.error("Error addDeposit:", err);
-        alert("Error guardando el depósito (revisá reglas de Firestore).");
+        alert("Error guardando el depósito.");
       } finally {
         hideSync();
       }
@@ -982,9 +984,7 @@
 
     async function loadDeposits() {
       try {
-        console.log("loadDeposits() → leyendo colección 'deposits'");
         const snapshot = await getDocs(collection(db, "deposits"));
-        console.log("loadDeposits() → docs encontrados:", snapshot.size);
 
         const listBody = document.getElementById("deposit-list");
         const selectQuestion = document.getElementById("question-deposit-select");
@@ -999,8 +999,6 @@
         snapshot.forEach((snapDoc) => {
           const d = snapDoc.data();
           const id = snapDoc.id;
-
-          console.log("→ Depósito leído:", id, d);
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
@@ -1036,7 +1034,7 @@
         }
       } catch (err) {
         console.error("Error loadDeposits:", err);
-        alert("Error cargando depósitos (mirá la consola para más detalle).");
+        alert("Error cargando depósitos.");
       }
     }
 
@@ -1054,9 +1052,7 @@
       }
     };
 
-    // ==============================
     // PREGUNTAS
-    // ==============================
     window.addQuestion = async function () {
       const depositSelect = document.getElementById("question-deposit-select");
       const textInput = document.getElementById("question-text");
@@ -1146,9 +1142,7 @@
       }
     };
 
-    // ==============================
     // OPERARIOS
-    // ==============================
     window.addOperator = async function () {
       const nameInput = document.getElementById("operator-name");
       const depositSelect = document.getElementById("operator-deposit-select");
@@ -1225,7 +1219,7 @@
         });
       } catch (err) {
         console.error("Error loadOperators:", err);
-        alert("Error cargando operarios (revisá reglas de Firestore).");
+        alert("Error cargando operarios.");
       }
     }
 
@@ -1243,10 +1237,9 @@
       }
     };
 
-    // ==============================
     // EVALUACIONES
-    // ==============================
     let evalQuestionsCache = [];
+    let lastEvaluationDetailFileName = "evaluacion_detalle";
 
     window.loadQuestionsForEvaluation = async function () {
       const depositSelect = document.getElementById("eval-deposit-select");
@@ -1370,6 +1363,7 @@
           }
           answers.push({
             questionId: qid,
+            questionText: question.text || "",
             score,
             maxPoints: question.maxPoints
           });
@@ -1417,7 +1411,6 @@
         const tbody = document.getElementById("evaluations-history-rows");
         const title = document.getElementById("evaluations-history-title");
 
-        // mapa de depósitos
         const depSnap = await getDocs(collection(db, "deposits"));
         const depositsMap = {};
         depSnap.forEach((dSnap) => {
@@ -1441,7 +1434,7 @@
 
         if (evalSnap.empty) {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td colspan="5" class="muted">No hay evaluaciones registradas.</td>`;
+          tr.innerHTML = `<td colspan="6" class="muted">No hay evaluaciones registradas.</td>`;
           tbody.appendChild(tr);
           return;
         }
@@ -1455,6 +1448,7 @@
             <td>${(e.totalObtained ?? 0).toFixed(2)}</td>
             <td>${(e.totalPossible ?? 0).toFixed(2)}</td>
             <td>${(e.percent ?? 0).toFixed(1)}%</td>
+            <td><button class="btn-small" onclick="showEvaluationDetail('${docSnap.id}')">Ver detalle</button></td>
           `;
           tbody.appendChild(tr);
         });
@@ -1464,7 +1458,7 @@
       }
     };
 
-    // EXPORT PDF EVALUACIONES
+    // EXPORT LISTADO EVALUACIONES
     window.exportEvaluationsPDF = function () {
       const tbody = document.getElementById("evaluations-history-rows");
       if (!tbody || tbody.children.length === 0) {
@@ -1474,18 +1468,139 @@
       const monthFilter = document.getElementById("history-month").value || "todas";
       const element = document.getElementById("evaluations-history-pdf");
       const opt = {
-        margin:       10,
-        filename:     `evaluaciones_${monthFilter}.pdf`,
-        image:        { type: "jpeg", quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" }
+        margin: 10,
+        filename: `evaluaciones_${monthFilter}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
       };
       html2pdf().set(opt).from(element).save();
     };
 
-    // ==============================
+    // DETALLE DE UNA EVALUACIÓN (PREGUNTAS + RESPUESTAS)
+    window.showEvaluationDetail = async function (evalId) {
+      try {
+        showSync("Cargando detalle de evaluación...");
+        const evalRef = doc(db, "evaluations", evalId);
+        const evalSnap = await getDoc(evalRef);
+        if (!evalSnap.exists()) {
+          alert("No se encontró la evaluación seleccionada.");
+          hideSync();
+          return;
+        }
+
+        const e = evalSnap.data();
+
+        // depósito
+        let depName = "Depósito";
+        try {
+          const depRef = doc(db, "deposits", e.depositId);
+          const depSnap = await getDoc(depRef);
+          if (depSnap.exists()) {
+            depName = depSnap.data().name || depName;
+          }
+        } catch (_) {}
+
+        // respuestas
+        const answersSnap = await getDocs(
+          collection(db, "evaluations", evalId, "answers")
+        );
+
+        const answers = [];
+        answersSnap.forEach((aSnap) => {
+          answers.push(aSnap.data());
+        });
+
+        // ordenar por questionText para que quede prolijo
+        answers.sort((a, b) => (a.questionText || "").localeCompare(b.questionText || ""));
+
+        const wrapper = document.getElementById("evaluation-detail-wrapper");
+        const container = document.getElementById("evaluation-detail-pdf");
+        const title = document.getElementById("evaluation-detail-title");
+
+        title.textContent = `Detalle evaluación - ${depName} (${e.month || "-"})`;
+        lastEvaluationDetailFileName = `evaluacion_${depName.replace(/\s+/g, "_")}_${(e.month || "sin_mes")}`;
+
+        let rowsHtml = "";
+        let idx = 1;
+        answers.forEach((ans) => {
+          const qText = ans.questionText || "(pregunta sin texto)";
+          const maxP = ans.maxPoints ?? 0;
+          const score = ans.score ?? 0;
+          const percent = maxP > 0 ? (score / maxP) * 100 : 0;
+          rowsHtml += `
+            <tr>
+              <td>${idx}</td>
+              <td>${qText}</td>
+              <td>${maxP.toFixed(2)}</td>
+              <td>${score.toFixed(2)}</td>
+              <td>${percent.toFixed(1)}%</td>
+            </tr>
+          `;
+          idx++;
+        });
+
+        if (answers.length === 0) {
+          rowsHtml = `<tr><td colspan="5" class="muted">No hay respuestas registradas para esta evaluación.</td></tr>`;
+        }
+
+        container.innerHTML = `
+          <div>
+            <h3>Resumen</h3>
+            <p class="muted">
+              Depósito: <strong>${depName}</strong><br>
+              Mes: <strong>${e.month || "-"}</strong><br>
+              Puntaje obtenido: <strong>${(e.totalObtained ?? 0).toFixed(2)}</strong> /
+              <strong>${(e.totalPossible ?? 0).toFixed(2)}</strong> (${(e.percent ?? 0).toFixed(1)}%)
+            </p>
+          </div>
+
+          <div class="mt-3">
+            <h3>Detalle de preguntas</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Pregunta</th>
+                  <th>Max</th>
+                  <th>Puntaje obtenido</th>
+                  <th>% pregunta</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        wrapper.style.display = "block";
+      } catch (err) {
+        console.error("Error showEvaluationDetail:", err);
+        alert("Error cargando el detalle de la evaluación.");
+      } finally {
+        hideSync();
+      }
+    };
+
+    window.exportEvaluationDetailPDF = function () {
+      const wrapper = document.getElementById("evaluation-detail-wrapper");
+      if (!wrapper || wrapper.style.display === "none") {
+        alert("Primero seleccioná una evaluación y cargá su detalle.");
+        return;
+      }
+      const element = document.getElementById("evaluation-detail-pdf");
+      const opt = {
+        margin: 10,
+        filename: `${lastEvaluationDetailFileName}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      };
+      html2pdf().set(opt).from(element).save();
+    };
+
     // PREMIOS
-    // ==============================
     window.loadBonuses = async function () {
       const monthInput = document.getElementById("bonus-month");
       const month = monthInput.value;
@@ -1641,7 +1756,6 @@
       }
     };
 
-    // EXPORT PDF PREMIOS
     window.exportBonusesPDF = function () {
       const tbody = document.getElementById("bonus-rows");
       if (!tbody || tbody.children.length === 0) {
@@ -1651,11 +1765,11 @@
       const month = document.getElementById("bonus-month").value || "sin_mes";
       const element = document.getElementById("bonus-pdf");
       const opt = {
-        margin:       10,
-        filename:     `premios_${month}.pdf`,
-        image:        { type: "jpeg", quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: "mm", format: "a4", orientation: "landscape" }
+        margin: 10,
+        filename: `premios_${month}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }
       };
       html2pdf().set(opt).from(element).save();
     };
