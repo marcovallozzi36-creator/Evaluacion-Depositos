@@ -713,7 +713,7 @@
     </div>
   </div>
 
-  <!-- LOGIC + FIREBASE (MODULAR 12.x) -->
+  <!-- LÓGICA + FIREBASE (MODULAR 12.x) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import {
@@ -745,7 +745,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = getFirestore(app, { ignoreUndefinedProperties: true });
     console.log("Firebase inicializado OK");
 
     // ==============================
@@ -906,9 +906,9 @@
         selectOperator.innerHTML = "";
         if (selectEval) selectEval.innerHTML = "";
 
-        snapshot.forEach((document) => {
-          const d = document.data();
-          const id = document.id;
+        snapshot.forEach((snapDoc) => {
+          const d = snapDoc.data();
+          const id = snapDoc.id;
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
@@ -1015,9 +1015,9 @@
         );
         const snapshot = await getDocs(qRef);
 
-        snapshot.forEach((document) => {
-          const q = document.data();
-          const id = document.id;
+        snapshot.forEach((snapDoc) => {
+          const q = snapDoc.data();
+          const id = snapDoc.id;
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${q.text}</td>
@@ -1084,10 +1084,10 @@
         const select = document.getElementById(selectId);
         if (!select) return;
         select.innerHTML = "";
-        snapshot.forEach((document) => {
-          const d = document.data();
+        snapshot.forEach((snapDoc) => {
+          const d = snapDoc.data();
           const opt = document.createElement("option");
-          opt.value = document.id;
+          opt.value = snapDoc.id;
           opt.textContent = d.name;
           select.appendChild(opt);
         });
@@ -1098,11 +1098,10 @@
 
     async function loadOperators() {
       try {
-        // Map de depósitos
         const depSnap = await getDocs(collection(db, "deposits"));
         const depositsMap = {};
-        depSnap.forEach((d) => {
-          depositsMap[d.id] = d.data().name || "Depósito";
+        depSnap.forEach((dSnap) => {
+          depositsMap[dSnap.id] = dSnap.data().name || "Depósito";
         });
 
         const qRef = query(collection(db, "operators"), orderBy("name"));
@@ -1110,13 +1109,13 @@
         const tbody = document.getElementById("operator-list");
         tbody.innerHTML = "";
 
-        snapshot.forEach((document) => {
-          const op = document.data();
+        snapshot.forEach((snapDoc) => {
+          const op = snapDoc.data();
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${op.name}</td>
             <td>${depositsMap[op.depositId] || "-"}</td>
-            <td><button class="btn-small btn-danger" onclick="deleteOperator('${document.id}')">Borrar</button></td>
+            <td><button class="btn-small btn-danger" onclick="deleteOperator('${snapDoc.id}')">Borrar</button></td>
           `;
           tbody.appendChild(tr);
         });
@@ -1172,9 +1171,9 @@
         let totalPossible = 0;
         let index = 1;
 
-        snapshot.forEach((document) => {
-          const q = document.data();
-          const id = document.id;
+        snapshot.forEach((snapDoc) => {
+          const q = snapDoc.data();
+          const id = snapDoc.id;
           evalQuestionsCache.push({ id, ...q });
           totalPossible += q.maxPoints;
 
@@ -1315,25 +1314,28 @@
       try {
         const depSnap = await getDocs(collection(db, "deposits"));
         const depositsMap = {};
-        depSnap.forEach((d) => {
-          depositsMap[d.id] = d.data().name || "Depósito";
+        depSnap.forEach((dSnap) => {
+          depositsMap[dSnap.id] = dSnap.data().name || "Depósito";
         });
 
         const operatorsSnap = await getDocs(collection(db, "operators"));
         const operators = [];
-        operatorsSnap.forEach((docu) => {
-          operators.push({ id: docu.id, ...docu.data() });
+        operatorsSnap.forEach((opSnap) => {
+          operators.push({ id: opSnap.id, ...opSnap.data() });
         });
 
         const evalsSnap = await getDocs(
           query(collection(db, "evaluations"), where("month", "==", month))
         );
         const evalsByDeposit = {};
-        evalsSnap.forEach((docu) => {
-          const e = docu.data();
+        evalsSnap.forEach((evSnap) => {
+          const e = evSnap.data();
           const depId = e.depositId;
           const existing = evalsByDeposit[depId];
-          if (!existing || (existing.createdAt && e.createdAt && e.createdAt.toMillis() > existing.createdAt.toMillis())) {
+          if (
+            !existing ||
+            (existing.createdAt && e.createdAt && e.createdAt.toMillis() > existing.createdAt.toMillis())
+          ) {
             evalsByDeposit[depId] = e;
           }
         });
@@ -1342,8 +1344,8 @@
           query(collection(db, "bonuses"), where("month", "==", month))
         );
         const bonusMap = {};
-        bonusesSnap.forEach((docu) => {
-          const b = docu.data();
+        bonusesSnap.forEach((bSnap) => {
+          const b = bSnap.data();
           bonusMap[b.operatorId] = b;
         });
 
@@ -1452,4 +1454,5 @@
   </script>
 </body>
 </html>
+
 
