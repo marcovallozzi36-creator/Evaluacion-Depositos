@@ -455,11 +455,11 @@
     <!-- LOGIN -->
     <div id="login-view">
       <div class="card">
-        <h1>Iniciar sesión</h1>
-        <p class="muted mb-4">Seleccioná tu usuario y accedé al panel de evaluación.</p>
+        <h1>Iniciar sesión 🔐</h1>
+        <p class="muted mb-4">Seleccioná tu usuario y arrancá a evaluar depósitos 🚀.</p>
 
         <div class="mt-2">
-          <label for="login-user-select" class="muted">Usuario</label>
+          <label for="login-user-select" class="muted">Usuario 👤</label>
           <select id="login-user-select">
             <option value="luis.reynosa@georgalos.com.ar">luis.reynosa@georgalos.com.ar</option>
             <option value="marco.vallozzi@georgalos.com.ar">marco.vallozzi@georgalos.com.ar</option>
@@ -467,19 +467,18 @@
         </div>
 
         <div class="mt-2">
-          <label for="login-password" class="muted">Contraseña</label>
+          <label for="login-password" class="muted">Contraseña 🔑</label>
           <input id="login-password" type="password" placeholder="••••••••" />
         </div>
 
         <div id="login-error" class="error-text" style="display:none;"></div>
 
-        <div class="mt-4 row">
-          <button onclick="handleLogin()">Ingresar</button>
-          <button class="secondary" type="button" onclick="fillDemoLogin()">Completar demo</button>
+        <div class="mt-4">
+          <button onclick="handleLogin()">Ingresar 🚀</button>
         </div>
 
         <p class="muted mt-4" style="font-size:0.75rem;">
-          Login local con usuarios definidos en el código.
+          Login local con usuarios definidos en el código ⚙️
         </p>
       </div>
     </div>
@@ -500,7 +499,7 @@
       <div class="card">
         <div class="row" style="align-items:center; justify-content:space-between;">
           <div>
-            <h1>Evaluación de Depósitos</h1>
+            <h1>Evaluación de Depósitos 📦</h1>
             <p class="muted mt-1">
               Configurá depósitos, preguntas, operarios y evaluaciones mensuales con cálculo de premios.
             </p>
@@ -880,13 +879,6 @@
       loadOperators();
     }
 
-    window.fillDemoLogin = function () {
-      const select = document.getElementById("login-user-select");
-      const passInput = document.getElementById("login-password");
-      select.value = USERS[0].email;
-      passInput.value = USERS[0].password;
-    };
-
     window.handleLogin = function () {
       const select = document.getElementById("login-user-select");
       const email = select.value;
@@ -903,7 +895,6 @@
         return;
       }
 
-      // guardo sesión en localStorage
       localStorage.setItem("geo_eval_user_email", user.email);
       openMainForUser(user);
     };
@@ -955,7 +946,6 @@
             setTimeout(() => {
               splash.style.display = "none";
 
-              // Autologin si hay usuario guardado
               const savedEmail = localStorage.getItem("geo_eval_user_email");
               const savedUser = USERS.find((u) => u.email === savedEmail);
               if (savedUser) {
@@ -1100,7 +1090,6 @@
       try {
         showSync("Sincronizando pregunta con Firebase...");
 
-        // cantidad actual de preguntas para ese depósito → order al final
         const qRef = query(
           collection(db, "questions"),
           where("depositId", "==", depositId)
@@ -1147,7 +1136,6 @@
           items.push({ id: snapDoc.id, ...snapDoc.data() });
         });
 
-        // orden por campo "order" (si no hay, va al final)
         items.sort((a, b) => {
           const ao = typeof a.order === "number" ? a.order : 9999;
           const bo = typeof b.order === "number" ? b.order : 9999;
@@ -1187,7 +1175,6 @@
       }
     };
 
-    // Reordenar preguntas ↑ / ↓
     window.moveQuestion = async function (questionId, direction) {
       const depositSelect = document.getElementById("question-deposit-select");
       const depositId = depositSelect.value;
@@ -1212,9 +1199,7 @@
           });
         });
 
-        // orden actual
         items.sort((a, b) => a.order - b.order);
-        // reindexo limpio 0..n-1
         items.forEach((it, idx) => {
           it.order = idx;
         });
@@ -1228,7 +1213,7 @@
         const swapIdx = direction === "up" ? idx - 1 : idx + 1;
         if (swapIdx < 0 || swapIdx >= items.length) {
           hideSync();
-          return; // ya está en el extremo
+          return;
         }
 
         const batch = writeBatch(db);
@@ -1570,7 +1555,6 @@
       }
     };
 
-    // EXPORT LISTADO EVALUACIONES
     window.exportEvaluationsPDF = function () {
       const tbody = document.getElementById("evaluations-history-rows");
       if (!tbody || tbody.children.length === 0) {
@@ -1589,7 +1573,7 @@
       window.html2pdf().set(opt).from(element).save();
     };
 
-    // DETALLE DE UNA EVALUACIÓN (PREGUNTAS + RESPUESTAS)
+    // DETALLE DE UNA EVALUACIÓN
     window.showEvaluationDetail = async function (evalId) {
       try {
         showSync("Cargando detalle de evaluación...");
@@ -1603,7 +1587,6 @@
 
         const e = evalSnap.data();
 
-        // Nombre del depósito
         let depName = "Depósito";
         try {
           const depRef = doc(db, "deposits", e.depositId);
@@ -1613,7 +1596,6 @@
           }
         } catch (_) {}
 
-        // Respuestas (subcolección)
         const answersSnap = await getDocs(
           collection(db, "evaluations", evalId, "answers")
         );
@@ -1623,7 +1605,6 @@
           answers.push(aSnap.data());
         });
 
-        // Ordeno por texto de pregunta para que quede prolijo
         answers.sort((a, b) => (a.questionText || "").localeCompare(b.questionText || ""));
 
         const wrapper = document.getElementById("evaluation-detail-wrapper");
@@ -1657,7 +1638,6 @@
           rowsHtml = `<tr><td colspan="5" class="muted">No hay respuestas registradas para esta evaluación.</td></tr>`;
         }
 
-        // Armo contenido que se va a exportar
         container.innerHTML = `
           <div style="padding:8px 0;">
             <h3>Resumen</h3>
@@ -1688,7 +1668,6 @@
           </div>
         `;
 
-        // muestro el bloque de detalle (para que html2pdf lo “vea”)
         wrapper.style.display = "block";
       } catch (err) {
         console.error("Error showEvaluationDetail:", err);
@@ -1883,11 +1862,9 @@
       const month = document.getElementById("bonus-month").value || "sin_mes";
       const element = document.getElementById("bonus-pdf");
 
-      // Guardamos estilos originales para restaurar después
       const originalWidth = element.style.width;
       const originalMargin = element.style.margin;
 
-      // Forzamos un ancho grande solo para el PDF
       element.style.width = "1100px";
       element.style.margin = "0 auto";
 
@@ -1904,7 +1881,6 @@
         .from(element)
         .save()
         .then(() => {
-          // Restauramos estilos para la vista normal
           element.style.width = originalWidth;
           element.style.margin = originalMargin;
         })
