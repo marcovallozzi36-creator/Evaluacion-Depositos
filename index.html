@@ -689,6 +689,45 @@
               <button onclick="saveEvaluation()">Guardar evaluación</button>
             </div>
           </div>
+
+          <!-- HISTORIAL DE EVALUACIONES + EXPORT PDF -->
+          <div id="evaluations-history-block" class="mt-6">
+            <h2>Historial de evaluaciones</h2>
+            <p class="muted mb-2">
+              Consultá todas las evaluaciones guardadas. Podés filtrar por mes y exportar a PDF.
+            </p>
+
+            <div class="row mt-2">
+              <div class="col-3">
+                <label class="muted">Filtrar por mes (opcional)</label>
+                <input id="history-month" type="month" />
+              </div>
+              <div class="col-3" style="align-self:flex-end;">
+                <button class="secondary" onclick="loadEvaluationsHistory()">Buscar</button>
+              </div>
+              <div class="col-3" style="align-self:flex-end;">
+                <button onclick="exportEvaluationsPDF()">Exportar evaluaciones a PDF</button>
+              </div>
+            </div>
+
+            <div id="evaluations-history-pdf" class="mt-3">
+              <h3 class="muted" id="evaluations-history-title">Listado de evaluaciones</h3>
+              <div class="scroll-y-big mt-2">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Depósito</th>
+                      <th>Mes</th>
+                      <th>Puntaje obtenido</th>
+                      <th>Puntaje posible</th>
+                      <th>%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="evaluations-history-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- PREMIOS -->
@@ -706,23 +745,29 @@
             <div class="col-3" style="align-self:flex-end;">
               <button onclick="loadBonuses()">Cargar información</button>
             </div>
+            <div class="col-3" style="align-self:flex-end;">
+              <button onclick="exportBonusesPDF()">Exportar premios a PDF</button>
+            </div>
           </div>
 
           <div id="bonus-content" class="mt-4" style="display:none;">
-            <div class="scroll-y-big">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Operario</th>
-                    <th>Depósito</th>
-                    <th>% evaluación</th>
-                    <th>Premio base (100%)</th>
-                    <th>Premio calculado</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="bonus-rows"></tbody>
-              </table>
+            <div id="bonus-pdf">
+              <h3 class="muted" id="bonus-title">Premios operarios</h3>
+              <div class="scroll-y-big">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Operario</th>
+                      <th>Depósito</th>
+                      <th>% evaluación</th>
+                      <th>Premio base (100%)</th>
+                      <th>Premio calculado</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="bonus-rows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -733,6 +778,9 @@
 
   <!-- Cartel de sincronización -->
   <div id="sync-status">Sincronizando con Firebase...</div>
+
+  <!-- Librería para exportar a PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <!-- LÓGICA + FIREBASE (MODULAR 12.x) -->
   <script type="module">
@@ -866,6 +914,7 @@
         loadOperators();
       } else if (tab === "evaluations") {
         loadDepositsIntoSelect("eval-deposit-select");
+        loadEvaluationsHistory(); // que siempre muestre algo
       }
     };
 
@@ -1060,7 +1109,6 @@
       if (!depositId) return;
 
       try {
-        // SIN orderBy → no requiere índice compuesto
         const qRef = query(
           collection(db, "questions"),
           where("depositId", "==", depositId)
@@ -1216,7 +1264,6 @@
       }
 
       try {
-        // SIN orderBy → no requiere índice compuesto
         const qRef = query(
           collection(db, "questions"),
           where("depositId", "==", depositId)
@@ -1363,6 +1410,79 @@
       }
     };
 
+    // HISTORIAL DE EVALUACIONES
+    window.loadEvaluationsHistory = async function () {
+      try {
+        const monthFilter = document.getElementById("history-month").value;
+        const tbody = document.getElementById("evaluations-history-rows");
+        const title = document.getElementById("evaluations-history-title");
+
+        // mapa de depósitos
+        const depSnap = await getDocs(collection(db, "deposits"));
+        const depositsMap = {};
+        depSnap.forEach((dSnap) => {
+          depositsMap[dSnap.id] = dSnap.data().name || "Depósito";
+        });
+
+        let evalSnap;
+        if (monthFilter) {
+          const qRef = query(
+            collection(db, "evaluations"),
+            where("month", "==", monthFilter)
+          );
+          evalSnap = await getDocs(qRef);
+          title.textContent = "Evaluaciones del mes " + monthFilter;
+        } else {
+          evalSnap = await getDocs(collection(db, "evaluations"));
+          title.textContent = "Evaluaciones de todos los meses";
+        }
+
+        tbody.innerHTML = "";
+
+        if (evalSnap.empty) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td colspan="5" class="muted">No hay evaluaciones registradas.</td>`;
+          tbody.appendChild(tr);
+          return;
+        }
+
+        evalSnap.forEach((docSnap) => {
+          const e = docSnap.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${depositsMap[e.depositId] || "-"}</td>
+            <td>${e.month || "-"}</td>
+            <td>${(e.totalObtained ?? 0).toFixed(2)}</td>
+            <td>${(e.totalPossible ?? 0).toFixed(2)}</td>
+            <td>${(e.percent ?? 0).toFixed(1)}%</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error loadEvaluationsHistory:", err);
+        alert("Error cargando historial de evaluaciones.");
+      }
+    };
+
+    // EXPORT PDF EVALUACIONES
+    window.exportEvaluationsPDF = function () {
+      const tbody = document.getElementById("evaluations-history-rows");
+      if (!tbody || tbody.children.length === 0) {
+        alert("No hay evaluaciones para exportar.");
+        return;
+      }
+      const monthFilter = document.getElementById("history-month").value || "todas";
+      const element = document.getElementById("evaluations-history-pdf");
+      const opt = {
+        margin:       10,
+        filename:     `evaluaciones_${monthFilter}.pdf`,
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" }
+      };
+      html2pdf().set(opt).from(element).save();
+    };
+
     // ==============================
     // PREMIOS
     // ==============================
@@ -1452,6 +1572,8 @@
         });
 
         document.getElementById("bonus-content").style.display = "block";
+        document.getElementById("bonus-title").textContent =
+          "Premios operarios - Mes " + month;
 
         const inputs = tbody.querySelectorAll("input[type='number']");
         inputs.forEach((inp) => {
@@ -1518,7 +1640,25 @@
         hideSync();
       }
     };
+
+    // EXPORT PDF PREMIOS
+    window.exportBonusesPDF = function () {
+      const tbody = document.getElementById("bonus-rows");
+      if (!tbody || tbody.children.length === 0) {
+        alert("Primero cargá un mes de premios.");
+        return;
+      }
+      const month = document.getElementById("bonus-month").value || "sin_mes";
+      const element = document.getElementById("bonus-pdf");
+      const opt = {
+        margin:       10,
+        filename:     `premios_${month}.pdf`,
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "landscape" }
+      };
+      html2pdf().set(opt).from(element).save();
+    };
   </script>
 </body>
 </html>
-
