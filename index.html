@@ -5,7 +5,7 @@
   <title>Evaluación de Depósitos - Georgalos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Firebase (compat para hacerlo más simple en un solo archivo) -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
@@ -93,7 +93,7 @@
       color: #0b1120;
       font-weight: 600;
       padding: 8px 16px;
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
       width: auto;
       min-width: 120px;
       text-align: center;
@@ -272,7 +272,7 @@
       color: #e5e7eb;
     }
 
-    /* Splash screen */
+    /* Splash */
     #splash {
       position: fixed;
       inset: 0;
@@ -413,7 +413,6 @@
   <div id="splash">
     <div class="splash-inner">
       <div class="splash-logo">
-        <!-- Logo Georgalos -->
         <img src="https://www.georgalos.com.ar/wp-content/uploads/2024/08/georgalos-3.png" alt="Logo Georgalos" />
       </div>
       <h2>Evaluador de Depósitos</h2>
@@ -452,7 +451,7 @@
         </div>
 
         <p class="muted mt-4" style="font-size:0.75rem;">
-          Por ahora el login es local con usuarios definidos en el código. Después, si querés, lo pasamos a Firebase Auth.
+          Por ahora el login es local con usuarios definidos en el código.
         </p>
       </div>
     </div>
@@ -499,7 +498,7 @@
           </button>
         </div>
 
-        <!-- TAB: DEPÓSITOS & PREGUNTAS -->
+        <!-- DEPÓSITOS & PREGUNTAS -->
         <div id="tab-deposits" class="mt-4">
           <div class="row">
             <div class="col-2">
@@ -570,7 +569,7 @@
           </div>
         </div>
 
-        <!-- TAB: OPERARIOS -->
+        <!-- OPERARIOS -->
         <div id="tab-operators" class="mt-4" style="display:none;">
           <div class="row">
             <div class="col-2">
@@ -610,7 +609,7 @@
           </div>
         </div>
 
-        <!-- TAB: EVALUACIONES -->
+        <!-- EVALUACIONES -->
         <div id="tab-evaluations" class="mt-4" style="display:none;">
           <h2>Nueva evaluación mensual</h2>
           <p class="muted mb-2">
@@ -672,7 +671,7 @@
           </div>
         </div>
 
-        <!-- TAB: PREMIOS -->
+        <!-- PREMIOS -->
         <div id="tab-bonuses" class="mt-4" style="display:none;">
           <h2>Premios por mes</h2>
           <p class="muted mb-2">
@@ -708,13 +707,13 @@
           </div>
         </div>
 
-      </div> <!-- card -->
-    </div> <!-- main-view -->
-  </div> <!-- app-root -->
+      </div>
+    </div>
+  </div>
 
   <script>
     // ==============================
-    // CONFIG FIREBASE (TU PROYECTO)
+    // FIREBASE CONFIG (tu proyecto)
     // ==============================
     const firebaseConfig = {
       apiKey: "AIzaSyB46C16u-mEszandRusDbpH15uItifNNRE",
@@ -731,13 +730,14 @@
     try {
       app = firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
+      console.log("Firebase inicializado OK");
     } catch (err) {
       console.error("Error inicializando Firebase:", err);
       alert("Revisá la configuración de Firebase en el código.");
     }
 
     // ==============================
-    // LOGIN LOCAL (USERS HARDCODEADOS)
+    // LOGIN LOCAL
     // ==============================
     const USERS = [
       {
@@ -786,7 +786,6 @@
       document.getElementById("login-view").style.display = "none";
       document.getElementById("main-view").style.display = "block";
 
-      // Cargar datos iniciales
       loadDeposits();
       loadOperators();
     }
@@ -799,7 +798,7 @@
     }
 
     // ==============================
-    // NAVEGACIÓN ENTRE TABS
+    // TABS
     // ==============================
     function showTab(tab) {
       const tabs = ["deposits", "operators", "evaluations", "bonuses"];
@@ -854,6 +853,7 @@
     // DEPÓSITOS
     // ==============================
     async function addDeposit() {
+      if (!db) return;
       const nameInput = document.getElementById("deposit-name");
       const descInput = document.getElementById("deposit-description");
       const name = nameInput.value.trim();
@@ -875,12 +875,13 @@
         await loadDeposits();
         alert("Depósito agregado.");
       } catch (err) {
-        console.error(err);
+        console.error("Error addDeposit:", err);
         alert("Error guardando el depósito.");
       }
     }
 
     async function loadDeposits() {
+      if (!db) return;
       try {
         const snapshot = await db.collection("deposits").orderBy("name").get();
         const listBody = document.getElementById("deposit-list");
@@ -897,7 +898,6 @@
           const d = doc.data();
           const id = doc.id;
 
-          // Tabla
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${d.name}</td>
@@ -907,7 +907,6 @@
           `;
           listBody.appendChild(tr);
 
-          // Selects
           const opt1 = document.createElement("option");
           opt1.value = id;
           opt1.textContent = d.name;
@@ -926,24 +925,22 @@
           }
         });
 
-        // Cuando cambia depósito en preguntas, recarga lista
         loadQuestionsForSelectedDeposit();
         selectQuestion.onchange = loadQuestionsForSelectedDeposit;
       } catch (err) {
-        console.error(err);
+        console.error("Error loadDeposits:", err);
         alert("Error cargando depósitos.");
       }
     }
 
     async function deleteDeposit(id) {
-      if (!confirm("¿Seguro que querés borrar este depósito? (También deberías revisar preguntas/operarios asociados)")) {
-        return;
-      }
+      if (!db) return;
+      if (!confirm("¿Seguro que querés borrar este depósito?")) return;
       try {
         await db.collection("deposits").doc(id).delete();
         await loadDeposits();
       } catch (err) {
-        console.error(err);
+        console.error("Error deleteDeposit:", err);
         alert("Error borrando depósito.");
       }
     }
@@ -952,6 +949,7 @@
     // PREGUNTAS
     // ==============================
     async function addQuestion() {
+      if (!db) return;
       const depositSelect = document.getElementById("question-deposit-select");
       const textInput = document.getElementById("question-text");
       const maxPointsInput = document.getElementById("question-max-points");
@@ -986,12 +984,13 @@
         maxPointsInput.value = "2";
         await loadQuestionsForSelectedDeposit();
       } catch (err) {
-        console.error(err);
+        console.error("Error addQuestion:", err);
         alert("Error guardando la pregunta.");
       }
     }
 
     async function loadQuestionsForSelectedDeposit() {
+      if (!db) return;
       const depositSelect = document.getElementById("question-deposit-select");
       const depositId = depositSelect.value;
       const tbody = document.getElementById("question-list");
@@ -1017,18 +1016,19 @@
           tbody.appendChild(tr);
         });
       } catch (err) {
-        console.error(err);
+        console.error("Error loadQuestionsForSelectedDeposit:", err);
         alert("Error cargando preguntas.");
       }
     }
 
     async function deleteQuestion(id) {
+      if (!db) return;
       if (!confirm("¿Seguro que querés borrar esta pregunta?")) return;
       try {
         await db.collection("questions").doc(id).delete();
         await loadQuestionsForSelectedDeposit();
       } catch (err) {
-        console.error(err);
+        console.error("Error deleteQuestion:", err);
         alert("Error borrando pregunta.");
       }
     }
@@ -1037,6 +1037,7 @@
     // OPERARIOS
     // ==============================
     async function addOperator() {
+      if (!db) return;
       const nameInput = document.getElementById("operator-name");
       const depositSelect = document.getElementById("operator-deposit-select");
 
@@ -1062,12 +1063,13 @@
         nameInput.value = "";
         await loadOperators();
       } catch (err) {
-        console.error(err);
+        console.error("Error addOperator:", err);
         alert("Error guardando operario.");
       }
     }
 
     async function loadDepositsIntoSelect(selectId) {
+      if (!db) return;
       try {
         const snapshot = await db.collection("deposits").orderBy("name").get();
         const select = document.getElementById(selectId);
@@ -1081,11 +1083,12 @@
           select.appendChild(opt);
         });
       } catch (err) {
-        console.error(err);
+        console.error("Error loadDepositsIntoSelect:", err);
       }
     }
 
     async function loadOperators() {
+      if (!db) return;
       try {
         const depositsSnapshot = await db.collection("deposits").get();
         const depositsMap = {};
@@ -1108,18 +1111,19 @@
           tbody.appendChild(tr);
         });
       } catch (err) {
-        console.error(err);
+        console.error("Error loadOperators:", err);
         alert("Error cargando operarios.");
       }
     }
 
     async function deleteOperator(id) {
+      if (!db) return;
       if (!confirm("¿Seguro que querés borrar este operario?")) return;
       try {
         await db.collection("operators").doc(id).delete();
         await loadOperators();
       } catch (err) {
-        console.error(err);
+        console.error("Error deleteOperator:", err);
         alert("Error borrando operario.");
       }
     }
@@ -1130,6 +1134,7 @@
     let evalQuestionsCache = [];
 
     async function loadQuestionsForEvaluation() {
+      if (!db) return;
       const depositSelect = document.getElementById("eval-deposit-select");
       const monthInput = document.getElementById("eval-month");
       const depositId = depositSelect.value;
@@ -1169,7 +1174,7 @@
             <td>${q.text}</td>
             <td>${q.maxPoints}</td>
             <td>
-              <input type="number" min="0" step="0.1" max="${q.maxPoints}" 
+              <input type="number" min="0" step="0.1" max="${q.maxPoints}"
                 value="0" data-question-id="${id}" oninput="recalculateEvaluation()" />
             </td>
           `;
@@ -1188,7 +1193,7 @@
         document.getElementById("summary-obtained").textContent = "0";
         document.getElementById("summary-percent").textContent = "0%";
       } catch (err) {
-        console.error(err);
+        console.error("Error loadQuestionsForEvaluation:", err);
         alert("Error cargando preguntas para evaluación.");
       }
     }
@@ -1204,9 +1209,7 @@
 
       inputs.forEach((inp) => {
         const val = parseFloat(inp.value);
-        if (!isNaN(val)) {
-          totalObtained += val;
-        }
+        if (!isNaN(val)) totalObtained += val;
       });
 
       const percent = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
@@ -1217,6 +1220,7 @@
     }
 
     async function saveEvaluation() {
+      if (!db) return;
       const depositSelect = document.getElementById("eval-deposit-select");
       const monthInput = document.getElementById("eval-month");
       const depositId = depositSelect.value;
@@ -1283,7 +1287,7 @@
 
         alert("Evaluación guardada correctamente. %: " + percent.toFixed(1) + "%");
       } catch (err) {
-        console.error(err);
+        console.error("Error saveEvaluation:", err);
         alert("Error guardando evaluación.");
       }
     }
@@ -1292,6 +1296,7 @@
     // PREMIOS
     // ==============================
     async function loadBonuses() {
+      if (!db) return;
       const monthInput = document.getElementById("bonus-month");
       const month = monthInput.value;
       if (!month) {
@@ -1362,7 +1367,7 @@
               </span>
             </td>
             <td>
-              <input type="number" min="0" step="0.01" value="${baseAmount.toFixed(2)}" 
+              <input type="number" min="0" step="0.01" value="${baseAmount.toFixed(2)}"
                 data-operator-id="${op.id}" data-percent="${percent}" />
             </td>
             <td>
@@ -1389,12 +1394,13 @@
         });
 
       } catch (err) {
-        console.error(err);
+        console.error("Error loadBonuses:", err);
         alert("Error cargando premios.");
       }
     }
 
     async function saveBonusForOperator(operatorId) {
+      if (!db) return;
       const monthInput = document.getElementById("bonus-month");
       const month = monthInput.value;
       if (!month) {
@@ -1434,7 +1440,7 @@
 
         alert("Premio base guardado.");
       } catch (err) {
-        console.error(err);
+        console.error("Error saveBonusForOperator:", err);
         alert("Error guardando premio.");
       }
     }
