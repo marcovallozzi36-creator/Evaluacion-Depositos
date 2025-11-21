@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Evaluación de Depósitos - Georgalos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Firebase (compat para hacerlo más simple en un solo archivo) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #050816;
+      color: #f4f4f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    #app-root {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: #0b1020;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    h1, h2, h3 {
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+
+    p {
+      color: #9ca3af;
+    }
+
+    .muted {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    input, select, button, textarea {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #0b1120;
+      font-weight: 600;
+      padding: 8px 16px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      width: auto;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+      box-shadow: 0 10px 20px rgba(34, 197, 94, 0.35);
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      box-shadow: none;
+    }
+
+    button.secondary:hover {
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.6);
+    }
+
+    .btn-danger {
+      background: #b91c1c;
+      color: #fee2e2;
+    }
+
+    .btn-small {
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      min-width: 0;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .col-2 {
+      flex: 1 1 50%;
+      min-width: 220px;
+    }
+
+    .col-3 {
+      flex: 1 1 33%;
+      min-width: 220px;
+    }
+
+    .mt-1 { margin-top: 4px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .mt-6 { margin-top: 24px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-4 { margin-bottom: 16px; }
+
+    .center { text-align: center; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.15);
+      color: #5eead4;
+      font-size: 0.75rem;
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #5eead4;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .nav button {
+      flex: 1 1 auto;
+      min-width: 140px;
+      background: #020617;
+      color: #9ca3af;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: none;
+    }
+
+    .nav button.active {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #020617;
+      border-color: transparent;
+      box-shadow: 0 14px 30px rgba(34, 197, 94, 0.35);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      text-align: left;
+    }
+
+    th {
+      font-weight: 500;
+      color: #9ca3af;
+      background: rgba(15, 23, 42, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:hover {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: rgba(55, 65, 81, 0.8);
+    }
+
+    .pill-green {
+      background: rgba(22, 163, 74, 0.2);
+      color: #4ade80;
+    }
+
+    .pill-yellow {
+      background: rgba(202, 138, 4, 0.25);
+      color: #facc15;
+    }
+
+    .pill-red {
+      background: rgba(185, 28, 28, 0.25);
+      color: #fca5a5;
+    }
+
+    .summary-box {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.2), transparent),
+                  rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    .summary-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .summary-value {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    /* Splash screen */
+    #splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #22c55e 0, transparent 50%),
+                  #020617;
+      z-index: 50;
+    }
+
+    .splash-inner {
+      text-align: center;
+      max-width: 360px;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(12px);
+    }
+
+    .splash-logo {
+      width: 90px;
+      height: 90px;
+      border-radius: 999px;
+      margin: 0 auto 12px;
+      overflow: hidden;
+      border: 2px solid rgba(148, 163, 184, 0.5);
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .splash-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(31, 41, 55, 0.9);
+      overflow: hidden;
+      margin-top: 16px;
+      position: relative;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #22c55e, #a3e635);
+      transition: width 0.15s linear;
+    }
+
+    /* Login */
+    #login-view {
+      display: none;
+      max-width: 400px;
+      margin: 40px auto 0;
+    }
+
+    /* Main app */
+    #main-view {
+      display: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-user {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .badge-role {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.18);
+      color: #93c5fd;
+      width: fit-content;
+    }
+
+    .error-text {
+      font-size: 0.8rem;
+      color: #f97373;
+      margin-top: 4px;
+    }
+
+    .scroll-y {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .scroll-y-big {
+      max-height: 330px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        align-items: flex-start;
+      }
+
+      #app-root {
+        padding: 10px;
+      }
+
+      .card {
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      #login-view {
+        margin-top: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="splash-inner">
+      <div class="splash-logo">
+        <!-- Logo Georgalos -->
+        <img src="https://www.georgalos.com.ar/wp-content/uploads/2024/08/georgalos-3.png" alt="Logo Georgalos" />
+      </div>
+      <h2>Evaluador de Depósitos</h2>
+      <p class="muted mt-2">Cargando tablero de desempeño mensual...</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="splash-progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-root">
+    <!-- LOGIN -->
+    <div id="login-view">
+      <div class="card">
+        <h1>Iniciar sesión</h1>
+        <p class="muted mb-4">Seleccioná tu usuario y accedé al panel de evaluación.</p>
+
+        <div class="mt-2">
+          <label for="login-user-select" class="muted">Usuario</label>
+          <select id="login-user-select">
+            <option value="luis.reynosa@georgalos.com.ar">luis.reynosa@georgalos.com.ar</option>
+            <option value="marco.vallozzi@georgalos.com.ar">marco.vallozzi@georgalos.com.ar</option>
+          </select>
+        </div>
+
+        <div class="mt-2">
+          <label for="login-password" class="muted">Contraseña</label>
+          <input id="login-password" type="password" placeholder="••••••••" />
+        </div>
+
+        <div id="login-error" class="error-text" style="display:none;"></div>
+
+        <div class="mt-4 row">
+          <button onclick="handleLogin()">Ingresar</button>
+          <button class="secondary" type="button" onclick="fillDemoLogin()">Completar demo</button>
+        </div>
+
+        <p class="muted mt-4" style="font-size:0.75rem;">
+          Por ahora el login es local con usuarios definidos en el código. Después, si querés, lo pasamos a Firebase Auth.
+        </p>
+      </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main-view">
+      <div class="topbar">
+        <div class="topbar-user">
+          <span class="muted" style="font-size:0.8rem;">Panel de control</span>
+          <span id="user-name" style="font-weight:600;"></span>
+          <span id="user-role" class="badge-role"></span>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="secondary btn-small" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+          <div>
+            <h1>Evaluación de Depósitos</h1>
+            <p class="muted mt-1">
+              Configurá depósitos, preguntas, operarios y evaluaciones mensuales con cálculo de premios.
+            </p>
+          </div>
+          <div class="tag">
+            <span class="tag-dot"></span>
+            <span>Georgalos · Versión inicial</span>
+          </div>
+        </div>
+
+        <div class="nav mt-4">
+          <button id="tab-btn-deposits" class="active" onclick="showTab('deposits')">
+            Depósitos & Preguntas
+          </button>
+          <button id="tab-btn-operators" onclick="showTab('operators')">
+            Operarios
+          </button>
+          <button id="tab-btn-evaluations" onclick="showTab('evaluations')">
+            Evaluaciones
+          </button>
+          <button id="tab-btn-bonuses" onclick="showTab('bonuses')">
+            Premios
+          </button>
+        </div>
+
+        <!-- TAB: DEPÓSITOS & PREGUNTAS -->
+        <div id="tab-deposits" class="mt-4">
+          <div class="row">
+            <div class="col-2">
+              <h2>Depósitos</h2>
+              <p class="muted mb-2">Alta y listado de depósitos a evaluar.</p>
+
+              <div>
+                <label class="muted">Nombre del depósito</label>
+                <input id="deposit-name" type="text" placeholder="Depósito Victoria" />
+              </div>
+              <div class="mt-2">
+                <label class="muted">Descripción (opcional)</label>
+                <textarea id="deposit-description" rows="2" placeholder="Depósito central, turno noche..."></textarea>
+              </div>
+              <div class="mt-3">
+                <button onclick="addDeposit()">Agregar depósito</button>
+              </div>
+
+              <div class="mt-4 scroll-y">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Depósito</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deposit-list"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="col-2">
+              <h2>Preguntas por depósito</h2>
+              <p class="muted mb-2">Definí el cuestionario de cada depósito.</p>
+
+              <div>
+                <label class="muted">Depósito</label>
+                <select id="question-deposit-select"></select>
+              </div>
+
+              <div class="mt-2">
+                <label class="muted">Texto de la pregunta</label>
+                <input id="question-text" type="text" placeholder="Orden y limpieza del sector..." />
+              </div>
+
+              <div class="mt-2">
+                <label class="muted">Puntaje máximo</label>
+                <input id="question-max-points" type="number" min="0.5" step="0.5" value="2" />
+              </div>
+
+              <div class="mt-3">
+                <button onclick="addQuestion()">Agregar pregunta</button>
+              </div>
+
+              <div class="mt-4 scroll-y-big">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Pregunta</th>
+                      <th>Max</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="question-list"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: OPERARIOS -->
+        <div id="tab-operators" class="mt-4" style="display:none;">
+          <div class="row">
+            <div class="col-2">
+              <h2>Operarios</h2>
+              <p class="muted mb-2">Cada operario se asocia a un depósito.</p>
+
+              <div>
+                <label class="muted">Nombre del operario</label>
+                <input id="operator-name" type="text" placeholder="Juan Pérez" />
+              </div>
+
+              <div class="mt-2">
+                <label class="muted">Depósito</label>
+                <select id="operator-deposit-select"></select>
+              </div>
+
+              <div class="mt-3">
+                <button onclick="addOperator()">Agregar operario</button>
+              </div>
+            </div>
+
+            <div class="col-2">
+              <h3 class="mt-2">Listado</h3>
+              <div class="scroll-y-big">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Operario</th>
+                      <th>Depósito</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="operator-list"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: EVALUACIONES -->
+        <div id="tab-evaluations" class="mt-4" style="display:none;">
+          <h2>Nueva evaluación mensual</h2>
+          <p class="muted mb-2">
+            Elegí el depósito y el mes, completá los puntajes por pregunta y guardá la evaluación.
+          </p>
+
+          <div class="row mt-2">
+            <div class="col-3">
+              <label class="muted">Depósito</label>
+              <select id="eval-deposit-select"></select>
+            </div>
+            <div class="col-3">
+              <label class="muted">Mes</label>
+              <input id="eval-month" type="month" />
+            </div>
+            <div class="col-3" style="align-self:flex-end;">
+              <button onclick="loadQuestionsForEvaluation()">Cargar preguntas</button>
+            </div>
+          </div>
+
+          <div id="eval-questions-block" class="mt-4" style="display:none;">
+            <h3>Cuestionario</h3>
+            <p class="muted" style="font-size:0.8rem;">
+              Cargá el puntaje de cada pregunta (0 hasta el máximo). Podés usar valores intermedios (ej: 1.5 sobre 2).
+            </p>
+
+            <div class="scroll-y-big">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Pregunta</th>
+                    <th>Max</th>
+                    <th>Puntaje otorgado</th>
+                  </tr>
+                </thead>
+                <tbody id="eval-question-rows"></tbody>
+              </table>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-metric">
+                <span class="summary-label">Puntaje obtenido</span>
+                <span class="summary-value" id="summary-obtained">0</span>
+              </div>
+              <div class="summary-metric">
+                <span class="summary-label">Puntaje posible</span>
+                <span class="summary-value" id="summary-possible">0</span>
+              </div>
+              <div class="summary-metric">
+                <span class="summary-label">% de calificación</span>
+                <span class="summary-value" id="summary-percent">0%</span>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <button onclick="saveEvaluation()">Guardar evaluación</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: PREMIOS -->
+        <div id="tab-bonuses" class="mt-4" style="display:none;">
+          <h2>Premios por mes</h2>
+          <p class="muted mb-2">
+            Definí el premio base al 100% por operario y mes. El sistema calcula el premio real según el % de evaluación del depósito.
+          </p>
+
+          <div class="row mt-2">
+            <div class="col-3">
+              <label class="muted">Mes</label>
+              <input id="bonus-month" type="month" />
+            </div>
+            <div class="col-3" style="align-self:flex-end;">
+              <button onclick="loadBonuses()">Cargar información</button>
+            </div>
+          </div>
+
+          <div id="bonus-content" class="mt-4" style="display:none;">
+            <div class="scroll-y-big">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Operario</th>
+                    <th>Depósito</th>
+                    <th>% evaluación</th>
+                    <th>Premio base (100%)</th>
+                    <th>Premio calculado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="bonus-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- card -->
+    </div> <!-- main-view -->
+  </div> <!-- app-root -->
+
+  <script>
+    // ==============================
+    // CONFIG FIREBASE (TU PROYECTO)
+    // ==============================
+    const firebaseConfig = {
+      apiKey: "AIzaSyB46C16u-mEszandRusDbpH15uItifNNRE",
+      authDomain: "evaluacion-depositos-rio2.firebaseapp.com",
+      projectId: "evaluacion-depositos-rio2",
+      storageBucket: "evaluacion-depositos-rio2.firebasestorage.app",
+      messagingSenderId: "546945701628",
+      appId: "1:546945701628:web:a13fc5cbf836aaf04f2979"
+    };
+
+    let app;
+    let db;
+
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+    } catch (err) {
+      console.error("Error inicializando Firebase:", err);
+      alert("Revisá la configuración de Firebase en el código.");
+    }
+
+    // ==============================
+    // LOGIN LOCAL (USERS HARDCODEADOS)
+    // ==============================
+    const USERS = [
+      {
+        email: "luis.reynosa@georgalos.com.ar",
+        password: "Lu1s#Geo2025",
+        name: "Luis Reynosa",
+        role: "Admin"
+      },
+      {
+        email: "marco.vallozzi@georgalos.com.ar",
+        password: "M@rc0_Geo2025",
+        name: "Marco Vallozzi",
+        role: "Supervisor"
+      }
+    ];
+
+    let currentUser = null;
+
+    function fillDemoLogin() {
+      const select = document.getElementById("login-user-select");
+      const passInput = document.getElementById("login-password");
+      select.value = USERS[0].email;
+      passInput.value = USERS[0].password;
+    }
+
+    function handleLogin() {
+      const select = document.getElementById("login-user-select");
+      const email = select.value;
+      const password = document.getElementById("login-password").value.trim();
+      const errorDiv = document.getElementById("login-error");
+      errorDiv.style.display = "none";
+      errorDiv.textContent = "";
+
+      const user = USERS.find((u) => u.email === email);
+
+      if (!user || user.password !== password) {
+        errorDiv.textContent = "Usuario o contraseña incorrectos.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById("user-name").textContent = user.name;
+      document.getElementById("user-role").textContent = user.role;
+
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("main-view").style.display = "block";
+
+      // Cargar datos iniciales
+      loadDeposits();
+      loadOperators();
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById("main-view").style.display = "none";
+      document.getElementById("login-view").style.display = "block";
+      document.getElementById("login-password").value = "";
+    }
+
+    // ==============================
+    // NAVEGACIÓN ENTRE TABS
+    // ==============================
+    function showTab(tab) {
+      const tabs = ["deposits", "operators", "evaluations", "bonuses"];
+      tabs.forEach((t) => {
+        document.getElementById("tab-" + t).style.display = t === tab ? "block" : "none";
+        const btn = document.getElementById("tab-btn-" + t);
+        if (btn) {
+          if (t === tab) btn.classList.add("active");
+          else btn.classList.remove("active");
+        }
+      });
+
+      if (tab === "deposits") {
+        loadDeposits();
+      } else if (tab === "operators") {
+        loadOperators();
+      } else if (tab === "evaluations") {
+        loadDepositsIntoSelect("eval-deposit-select");
+      }
+    }
+
+    // ==============================
+    // SPLASH
+    // ==============================
+    function startSplash() {
+      const splash = document.getElementById("splash");
+      const progress = document.getElementById("splash-progress");
+      let value = 0;
+      const interval = setInterval(() => {
+        value += Math.random() * 20;
+        if (value >= 100) value = 100;
+        progress.style.width = value + "%";
+        if (value >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            splash.style.opacity = "0";
+            splash.style.pointerEvents = "none";
+            setTimeout(() => {
+              splash.style.display = "none";
+              document.getElementById("login-view").style.display = "block";
+            }, 300);
+          }, 300);
+        }
+      }, 200);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      startSplash();
+    });
+
+    // ==============================
+    // DEPÓSITOS
+    // ==============================
+    async function addDeposit() {
+      const nameInput = document.getElementById("deposit-name");
+      const descInput = document.getElementById("deposit-description");
+      const name = nameInput.value.trim();
+      const description = descInput.value.trim();
+
+      if (!name) {
+        alert("Ingresá un nombre de depósito.");
+        return;
+      }
+
+      try {
+        await db.collection("deposits").add({
+          name,
+          description,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        nameInput.value = "";
+        descInput.value = "";
+        await loadDeposits();
+        alert("Depósito agregado.");
+      } catch (err) {
+        console.error(err);
+        alert("Error guardando el depósito.");
+      }
+    }
+
+    async function loadDeposits() {
+      try {
+        const snapshot = await db.collection("deposits").orderBy("name").get();
+        const listBody = document.getElementById("deposit-list");
+        const selectQuestion = document.getElementById("question-deposit-select");
+        const selectOperator = document.getElementById("operator-deposit-select");
+        const selectEval = document.getElementById("eval-deposit-select");
+
+        listBody.innerHTML = "";
+        selectQuestion.innerHTML = "";
+        selectOperator.innerHTML = "";
+        if (selectEval) selectEval.innerHTML = "";
+
+        snapshot.forEach((doc) => {
+          const d = doc.data();
+          const id = doc.id;
+
+          // Tabla
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.name}</td>
+            <td>
+              <button class="btn-small btn-danger" onclick="deleteDeposit('${id}')">Borrar</button>
+            </td>
+          `;
+          listBody.appendChild(tr);
+
+          // Selects
+          const opt1 = document.createElement("option");
+          opt1.value = id;
+          opt1.textContent = d.name;
+          selectQuestion.appendChild(opt1);
+
+          const opt2 = document.createElement("option");
+          opt2.value = id;
+          opt2.textContent = d.name;
+          selectOperator.appendChild(opt2);
+
+          if (selectEval) {
+            const opt3 = document.createElement("option");
+            opt3.value = id;
+            opt3.textContent = d.name;
+            selectEval.appendChild(opt3);
+          }
+        });
+
+        // Cuando cambia depósito en preguntas, recarga lista
+        loadQuestionsForSelectedDeposit();
+        selectQuestion.onchange = loadQuestionsForSelectedDeposit;
+      } catch (err) {
+        console.error(err);
+        alert("Error cargando depósitos.");
+      }
+    }
+
+    async function deleteDeposit(id) {
+      if (!confirm("¿Seguro que querés borrar este depósito? (También deberías revisar preguntas/operarios asociados)")) {
+        return;
+      }
+      try {
+        await db.collection("deposits").doc(id).delete();
+        await loadDeposits();
+      } catch (err) {
+        console.error(err);
+        alert("Error borrando depósito.");
+      }
+    }
+
+    // ==============================
+    // PREGUNTAS
+    // ==============================
+    async function addQuestion() {
+      const depositSelect = document.getElementById("question-deposit-select");
+      const textInput = document.getElementById("question-text");
+      const maxPointsInput = document.getElementById("question-max-points");
+
+      const depositId = depositSelect.value;
+      const text = textInput.value.trim();
+      const maxPoints = parseFloat(maxPointsInput.value);
+
+      if (!depositId) {
+        alert("Seleccioná un depósito.");
+        return;
+      }
+      if (!text) {
+        alert("Ingresá el texto de la pregunta.");
+        return;
+      }
+      if (isNaN(maxPoints) || maxPoints <= 0) {
+        alert("Ingresá un puntaje máximo válido.");
+        return;
+      }
+
+      try {
+        await db.collection("questions").add({
+          depositId,
+          text,
+          maxPoints,
+          order: 0,
+          active: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        textInput.value = "";
+        maxPointsInput.value = "2";
+        await loadQuestionsForSelectedDeposit();
+      } catch (err) {
+        console.error(err);
+        alert("Error guardando la pregunta.");
+      }
+    }
+
+    async function loadQuestionsForSelectedDeposit() {
+      const depositSelect = document.getElementById("question-deposit-select");
+      const depositId = depositSelect.value;
+      const tbody = document.getElementById("question-list");
+      tbody.innerHTML = "";
+
+      if (!depositId) return;
+
+      try {
+        const snapshot = await db.collection("questions")
+          .where("depositId", "==", depositId)
+          .orderBy("createdAt", "asc")
+          .get();
+
+        snapshot.forEach((doc) => {
+          const q = doc.data();
+          const id = doc.id;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${q.text}</td>
+            <td>${q.maxPoints}</td>
+            <td><button class="btn-small btn-danger" onclick="deleteQuestion('${id}')">Borrar</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Error cargando preguntas.");
+      }
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm("¿Seguro que querés borrar esta pregunta?")) return;
+      try {
+        await db.collection("questions").doc(id).delete();
+        await loadQuestionsForSelectedDeposit();
+      } catch (err) {
+        console.error(err);
+        alert("Error borrando pregunta.");
+      }
+    }
+
+    // ==============================
+    // OPERARIOS
+    // ==============================
+    async function addOperator() {
+      const nameInput = document.getElementById("operator-name");
+      const depositSelect = document.getElementById("operator-deposit-select");
+
+      const name = nameInput.value.trim();
+      const depositId = depositSelect.value;
+
+      if (!name) {
+        alert("Ingresá el nombre del operario.");
+        return;
+      }
+      if (!depositId) {
+        alert("Seleccioná un depósito para el operario.");
+        return;
+      }
+
+      try {
+        await db.collection("operators").add({
+          name,
+          depositId,
+          active: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        nameInput.value = "";
+        await loadOperators();
+      } catch (err) {
+        console.error(err);
+        alert("Error guardando operario.");
+      }
+    }
+
+    async function loadDepositsIntoSelect(selectId) {
+      try {
+        const snapshot = await db.collection("deposits").orderBy("name").get();
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const d = doc.data();
+          const opt = document.createElement("option");
+          opt.value = doc.id;
+          opt.textContent = d.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadOperators() {
+      try {
+        const depositsSnapshot = await db.collection("deposits").get();
+        const depositsMap = {};
+        depositsSnapshot.forEach((d) => {
+          depositsMap[d.id] = d.data().name || "Depósito";
+        });
+
+        const snapshot = await db.collection("operators").orderBy("name").get();
+        const tbody = document.getElementById("operator-list");
+        tbody.innerHTML = "";
+
+        snapshot.forEach((doc) => {
+          const op = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${op.name}</td>
+            <td>${depositsMap[op.depositId] || "-"}</td>
+            <td><button class="btn-small btn-danger" onclick="deleteOperator('${doc.id}')">Borrar</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Error cargando operarios.");
+      }
+    }
+
+    async function deleteOperator(id) {
+      if (!confirm("¿Seguro que querés borrar este operario?")) return;
+      try {
+        await db.collection("operators").doc(id).delete();
+        await loadOperators();
+      } catch (err) {
+        console.error(err);
+        alert("Error borrando operario.");
+      }
+    }
+
+    // ==============================
+    // EVALUACIONES
+    // ==============================
+    let evalQuestionsCache = [];
+
+    async function loadQuestionsForEvaluation() {
+      const depositSelect = document.getElementById("eval-deposit-select");
+      const monthInput = document.getElementById("eval-month");
+      const depositId = depositSelect.value;
+      const month = monthInput.value;
+
+      if (!depositId) {
+        alert("Seleccioná un depósito.");
+        return;
+      }
+      if (!month) {
+        alert("Seleccioná un mes.");
+        return;
+      }
+
+      try {
+        const snapshot = await db.collection("questions")
+          .where("depositId", "==", depositId)
+          .orderBy("createdAt", "asc")
+          .get();
+
+        evalQuestionsCache = [];
+        const tbody = document.getElementById("eval-question-rows");
+        tbody.innerHTML = "";
+
+        let totalPossible = 0;
+        let index = 1;
+
+        snapshot.forEach((doc) => {
+          const q = doc.data();
+          const id = doc.id;
+          evalQuestionsCache.push({ id, ...q });
+          totalPossible += q.maxPoints;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${index}</td>
+            <td>${q.text}</td>
+            <td>${q.maxPoints}</td>
+            <td>
+              <input type="number" min="0" step="0.1" max="${q.maxPoints}" 
+                value="0" data-question-id="${id}" oninput="recalculateEvaluation()" />
+            </td>
+          `;
+          tbody.appendChild(tr);
+          index++;
+        });
+
+        if (evalQuestionsCache.length === 0) {
+          alert("Este depósito no tiene preguntas configuradas.");
+          document.getElementById("eval-questions-block").style.display = "none";
+          return;
+        }
+
+        document.getElementById("eval-questions-block").style.display = "block";
+        document.getElementById("summary-possible").textContent = totalPossible.toFixed(2);
+        document.getElementById("summary-obtained").textContent = "0";
+        document.getElementById("summary-percent").textContent = "0%";
+      } catch (err) {
+        console.error(err);
+        alert("Error cargando preguntas para evaluación.");
+      }
+    }
+
+    function recalculateEvaluation() {
+      const inputs = document.querySelectorAll("#eval-question-rows input[type='number']");
+      let totalObtained = 0;
+      let totalPossible = 0;
+
+      evalQuestionsCache.forEach((q) => {
+        totalPossible += q.maxPoints;
+      });
+
+      inputs.forEach((inp) => {
+        const val = parseFloat(inp.value);
+        if (!isNaN(val)) {
+          totalObtained += val;
+        }
+      });
+
+      const percent = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
+
+      document.getElementById("summary-obtained").textContent = totalObtained.toFixed(2);
+      document.getElementById("summary-possible").textContent = totalPossible.toFixed(2);
+      document.getElementById("summary-percent").textContent = percent.toFixed(1) + "%";
+    }
+
+    async function saveEvaluation() {
+      const depositSelect = document.getElementById("eval-deposit-select");
+      const monthInput = document.getElementById("eval-month");
+      const depositId = depositSelect.value;
+      const month = monthInput.value;
+
+      if (!depositId || !month) {
+        alert("Seleccioná depósito y mes.");
+        return;
+      }
+      if (evalQuestionsCache.length === 0) {
+        alert("No hay preguntas para evaluar.");
+        return;
+      }
+
+      const inputs = document.querySelectorAll("#eval-question-rows input[type='number']");
+      let answers = [];
+      let totalObtained = 0;
+      let totalPossible = 0;
+
+      evalQuestionsCache.forEach((q) => {
+        totalPossible += q.maxPoints;
+      });
+
+      try {
+        inputs.forEach((inp) => {
+          const qid = inp.getAttribute("data-question-id");
+          const val = parseFloat(inp.value);
+          const score = isNaN(val) ? 0 : val;
+          const question = evalQuestionsCache.find((q) => q.id === qid);
+          if (!question) return;
+          if (score > question.maxPoints) {
+            throw new Error("Puntaje mayor al máximo en alguna pregunta.");
+          }
+          answers.push({
+            questionId: qid,
+            score,
+            maxPoints: question.maxPoints
+          });
+          totalObtained += score;
+        });
+      } catch (err) {
+        alert("Hay una pregunta con puntaje mayor al máximo permitido.");
+        return;
+      }
+
+      const percent = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
+
+      try {
+        const evalRef = await db.collection("evaluations").add({
+          depositId,
+          month,
+          totalObtained,
+          totalPossible,
+          percent,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        const batch = db.batch();
+        answers.forEach((ans) => {
+          const ansRef = db.collection("evaluations").doc(evalRef.id).collection("answers").doc();
+          batch.set(ansRef, ans);
+        });
+        await batch.commit();
+
+        alert("Evaluación guardada correctamente. %: " + percent.toFixed(1) + "%");
+      } catch (err) {
+        console.error(err);
+        alert("Error guardando evaluación.");
+      }
+    }
+
+    // ==============================
+    // PREMIOS
+    // ==============================
+    async function loadBonuses() {
+      const monthInput = document.getElementById("bonus-month");
+      const month = monthInput.value;
+      if (!month) {
+        alert("Seleccioná un mes.");
+        return;
+      }
+
+      try {
+        const depositsSnapshot = await db.collection("deposits").get();
+        const depositsMap = {};
+        depositsSnapshot.forEach((d) => {
+          depositsMap[d.id] = d.data().name || "Depósito";
+        });
+
+        const operatorsSnapshot = await db.collection("operators").get();
+        const operators = [];
+        operatorsSnapshot.forEach((doc) => {
+          operators.push({ id: doc.id, ...doc.data() });
+        });
+
+        const evalsSnapshot = await db.collection("evaluations")
+          .where("month", "==", month)
+          .get();
+
+        const evalsByDeposit = {};
+        evalsSnapshot.forEach((doc) => {
+          const e = doc.data();
+          const depId = e.depositId;
+          const existing = evalsByDeposit[depId];
+          if (!existing || (existing.createdAt && e.createdAt && e.createdAt.toMillis() > existing.createdAt.toMillis())) {
+            evalsByDeposit[depId] = e;
+          }
+        });
+
+        const bonusesSnapshot = await db.collection("bonuses")
+          .where("month", "==", month)
+          .get();
+
+        const bonusMap = {};
+        bonusesSnapshot.forEach((doc) => {
+          const b = doc.data();
+          bonusMap[b.operatorId] = b;
+        });
+
+        const tbody = document.getElementById("bonus-rows");
+        tbody.innerHTML = "";
+
+        operators.forEach((op) => {
+          const depName = depositsMap[op.depositId] || "-";
+          const evalData = evalsByDeposit[op.depositId];
+          const percent = evalData ? evalData.percent : 0;
+
+          const bonusData = bonusMap[op.id];
+          const baseAmount = bonusData ? bonusData.baseAmount : 0;
+          const calculated = baseAmount * (percent / 100);
+
+          let pillClass = "pill-red";
+          if (percent >= 90) pillClass = "pill-green";
+          else if (percent >= 70) pillClass = "pill-yellow";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${op.name}</td>
+            <td>${depName}</td>
+            <td>
+              <span class="pill ${pillClass}">
+                ${percent.toFixed(1)}%
+              </span>
+            </td>
+            <td>
+              <input type="number" min="0" step="0.01" value="${baseAmount.toFixed(2)}" 
+                data-operator-id="${op.id}" data-percent="${percent}" />
+            </td>
+            <td>
+              <span>$ ${calculated.toFixed(2)}</span>
+            </td>
+            <td>
+              <button class="btn-small" onclick="saveBonusForOperator('${op.id}')">Guardar</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("bonus-content").style.display = "block";
+
+        const inputs = tbody.querySelectorAll("input[type='number']");
+        inputs.forEach((inp) => {
+          inp.oninput = () => {
+            const percent = parseFloat(inp.getAttribute("data-percent")) || 0;
+            const baseAmount = parseFloat(inp.value) || 0;
+            const row = inp.closest("tr");
+            const spanCalc = row.querySelector("td:nth-child(5) span");
+            spanCalc.textContent = "$ " + (baseAmount * (percent / 100)).toFixed(2);
+          };
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert("Error cargando premios.");
+      }
+    }
+
+    async function saveBonusForOperator(operatorId) {
+      const monthInput = document.getElementById("bonus-month");
+      const month = monthInput.value;
+      if (!month) {
+        alert("Seleccioná un mes.");
+        return;
+      }
+
+      const input = document.querySelector(`input[data-operator-id="${operatorId}"]`);
+      if (!input) return;
+
+      const baseAmount = parseFloat(input.value);
+      if (isNaN(baseAmount) || baseAmount < 0) {
+        alert("Ingresá un monto válido para el premio base.");
+        return;
+      }
+
+      try {
+        const existingSnapshot = await db.collection("bonuses")
+          .where("operatorId", "==", operatorId)
+          .where("month", "==", month)
+          .limit(1)
+          .get();
+
+        if (!existingSnapshot.empty) {
+          const docId = existingSnapshot.docs[0].id;
+          await db.collection("bonuses").doc(docId).update({
+            baseAmount
+          });
+        } else {
+          await db.collection("bonuses").add({
+            operatorId,
+            month,
+            baseAmount,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        alert("Premio base guardado.");
+      } catch (err) {
+        console.error(err);
+        alert("Error guardando premio.");
+      }
+    }
+  </script>
+</body>
+</html>
