@@ -405,6 +405,13 @@
       z-index: 60;
     }
 
+    /* Contenedor ancho para PDF de premios */
+    #bonus-pdf {
+      width: 1100px;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
     @media (max-width: 768px) {
       body {
         align-items: flex-start;
@@ -1093,7 +1100,7 @@
       try {
         showSync("Sincronizando pregunta con Firebase...");
 
-        // obtengo cuántas preguntas hay para definir el orden al final
+        // cantidad actual de preguntas para ese depósito → order al final
         const qRef = query(
           collection(db, "questions"),
           where("depositId", "==", depositId)
@@ -1579,7 +1586,7 @@
         html2canvas: { scale: 2 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
       };
-      html2pdf().set(opt).from(element).save();
+      window.html2pdf().set(opt).from(element).save();
     };
 
     // DETALLE DE UNA EVALUACIÓN (PREGUNTAS + RESPUESTAS)
@@ -1596,7 +1603,7 @@
 
         const e = evalSnap.data();
 
-        // depósito
+        // Nombre del depósito
         let depName = "Depósito";
         try {
           const depRef = doc(db, "deposits", e.depositId);
@@ -1606,7 +1613,7 @@
           }
         } catch (_) {}
 
-        // respuestas
+        // Respuestas (subcolección)
         const answersSnap = await getDocs(
           collection(db, "evaluations", evalId, "answers")
         );
@@ -1616,7 +1623,7 @@
           answers.push(aSnap.data());
         });
 
-        // ordenar por texto
+        // Ordeno por texto de pregunta para que quede prolijo
         answers.sort((a, b) => (a.questionText || "").localeCompare(b.questionText || ""));
 
         const wrapper = document.getElementById("evaluation-detail-wrapper");
@@ -1624,7 +1631,8 @@
         const title = document.getElementById("evaluation-detail-title");
 
         title.textContent = `Detalle evaluación - ${depName} (${e.month || "-"})`;
-        lastEvaluationDetailFileName = `evaluacion_${depName.replace(/\s+/g, "_")}_${(e.month || "sin_mes")}`;
+        lastEvaluationDetailFileName =
+          `evaluacion_${depName.replace(/\s+/g, "_")}_${(e.month || "sin_mes")}`;
 
         let rowsHtml = "";
         let idx = 1;
@@ -1649,8 +1657,9 @@
           rowsHtml = `<tr><td colspan="5" class="muted">No hay respuestas registradas para esta evaluación.</td></tr>`;
         }
 
+        // Armo contenido que se va a exportar
         container.innerHTML = `
-          <div>
+          <div style="padding:8px 0;">
             <h3>Resumen</h3>
             <p class="muted">
               Depósito: <strong>${depName}</strong><br>
@@ -1679,6 +1688,7 @@
           </div>
         `;
 
+        // muestro el bloque de detalle (para que html2pdf lo “vea”)
         wrapper.style.display = "block";
       } catch (err) {
         console.error("Error showEvaluationDetail:", err);
@@ -1694,7 +1704,8 @@
         alert("Primero seleccioná una evaluación y cargá su detalle.");
         return;
       }
-      const element = document.getElementById("evaluation-detail-pdf");
+
+      const element = wrapper;
       const opt = {
         margin: 10,
         filename: `${lastEvaluationDetailFileName}.pdf`,
@@ -1702,7 +1713,8 @@
         html2canvas: { scale: 2 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
       };
-      html2pdf().set(opt).from(element).save();
+
+      window.html2pdf().set(opt).from(element).save();
     };
 
     // PREMIOS
@@ -1867,8 +1879,18 @@
         alert("Primero cargá un mes de premios.");
         return;
       }
+
       const month = document.getElementById("bonus-month").value || "sin_mes";
       const element = document.getElementById("bonus-pdf");
+
+      // Guardamos estilos originales para restaurar después
+      const originalWidth = element.style.width;
+      const originalMargin = element.style.margin;
+
+      // Forzamos un ancho grande solo para el PDF
+      element.style.width = "1100px";
+      element.style.margin = "0 auto";
+
       const opt = {
         margin: 10,
         filename: `premios_${month}.pdf`,
@@ -1876,9 +1898,23 @@
         html2canvas: { scale: 2 },
         jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }
       };
-      html2pdf().set(opt).from(element).save();
+
+      window.html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          // Restauramos estilos para la vista normal
+          element.style.width = originalWidth;
+          element.style.margin = originalMargin;
+        })
+        .catch(err => {
+          console.error("Error exportBonusesPDF:", err);
+          alert("Error exportando premios a PDF.");
+          element.style.width = originalWidth;
+          element.style.margin = originalMargin;
+        });
     };
   </script>
 </body>
 </html>
-
