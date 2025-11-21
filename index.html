@@ -766,7 +766,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app, { ignoreUndefinedProperties: true });
+    const db = getFirestore(app);
     console.log("Firebase inicializado OK");
 
     // Helpers de sincronización
@@ -1521,4 +1521,3 @@
   </script>
 </body>
 </html>
-
