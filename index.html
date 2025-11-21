@@ -5,10 +5,6 @@
   <title>Evaluación de Depósitos - Georgalos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
   <style>
     * {
       box-sizing: border-box;
@@ -18,8 +14,8 @@
     }
 
     body {
-      background: #050816;
-      color: #f4f4f5;
+      background: #f3f4f6;
+      color: #111827;
       min-height: 100vh;
       display: flex;
       align-items: stretch;
@@ -34,16 +30,16 @@
     }
 
     .card {
-      background: #0b1020;
+      background: #ffffff;
       border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(148, 163, 184, 0.15);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5e7eb;
     }
 
     h1, h2, h3 {
       font-weight: 600;
-      color: #f9fafb;
+      color: #111827;
     }
 
     h1 {
@@ -57,12 +53,12 @@
     }
 
     h3 {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       margin-bottom: 6px;
     }
 
     p {
-      color: #9ca3af;
+      color: #4b5563;
     }
 
     .muted {
@@ -71,60 +67,66 @@
     }
 
     input, select, button, textarea {
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
       padding: 8px 10px;
       font-size: 0.95rem;
-      background: #020617;
-      color: #e5e7eb;
+      background: #ffffff;
+      color: #111827;
       outline: none;
       width: 100%;
     }
 
     input:focus, select:focus, textarea:focus {
-      border-color: #22c55e;
-      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+      border-color: #16a34a;
+      box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.35);
+    }
+
+    textarea {
+      resize: vertical;
     }
 
     button {
       cursor: pointer;
       border: none;
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #0b1120;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #ffffff;
       font-weight: 600;
       padding: 8px 16px;
       transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
       width: auto;
       min-width: 120px;
       text-align: center;
+      border-radius: 999px;
     }
 
     button:hover {
       filter: brightness(1.05);
-      box-shadow: 0 10px 20px rgba(34, 197, 94, 0.35);
+      box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35);
       transform: translateY(-1px);
     }
 
     button.secondary {
-      background: #111827;
-      color: #e5e7eb;
-      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: #ffffff;
+      color: #111827;
+      border: 1px solid #d1d5db;
       box-shadow: none;
     }
 
     button.secondary:hover {
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.6);
+      box-shadow: 0 6px 18px rgba(148, 163, 184, 0.35);
     }
 
     .btn-danger {
-      background: #b91c1c;
-      color: #fee2e2;
+      background: #dc2626;
+      color: #ffffff;
     }
 
     .btn-small {
       font-size: 0.8rem;
-      padding: 4px 8px;
+      padding: 4px 10px;
       min-width: 0;
+      border-radius: 999px;
     }
 
     .row {
@@ -135,7 +137,7 @@
 
     .col-2 {
       flex: 1 1 50%;
-      min-width: 220px;
+      min-width: 260px;
     }
 
     .col-3 {
@@ -157,18 +159,19 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 3px 8px;
+      padding: 3px 10px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.15);
-      color: #5eead4;
+      background: #ecfdf3;
+      color: #15803d;
       font-size: 0.75rem;
+      border: 1px solid #bbf7d0;
     }
 
     .tag-dot {
       width: 6px;
       height: 6px;
       border-radius: 999px;
-      background: #5eead4;
+      background: #22c55e;
     }
 
     .nav {
@@ -181,17 +184,18 @@
     .nav button {
       flex: 1 1 auto;
       min-width: 140px;
-      background: #020617;
-      color: #9ca3af;
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #f9fafb;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
       box-shadow: none;
+      border-radius: 999px;
     }
 
     .nav button.active {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #020617;
-      border-color: transparent;
-      box-shadow: 0 14px 30px rgba(34, 197, 94, 0.35);
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+      box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35);
     }
 
     table {
@@ -199,55 +203,56 @@
       border-collapse: collapse;
       margin-top: 10px;
       font-size: 0.9rem;
+      background: #ffffff;
     }
 
     th, td {
       padding: 6px 8px;
-      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      border-bottom: 1px solid #e5e7eb;
       text-align: left;
     }
 
     th {
       font-weight: 500;
-      color: #9ca3af;
-      background: rgba(15, 23, 42, 0.8);
+      color: #4b5563;
+      background: #f9fafb;
       position: sticky;
       top: 0;
       z-index: 1;
     }
 
     tbody tr:hover {
-      background: rgba(15, 23, 42, 0.7);
+      background: #f9fafb;
     }
 
     .pill {
       padding: 3px 8px;
       border-radius: 999px;
       font-size: 0.75rem;
-      background: rgba(55, 65, 81, 0.8);
+      background: #e5e7eb;
+      color: #374151;
     }
 
     .pill-green {
-      background: rgba(22, 163, 74, 0.2);
-      color: #4ade80;
+      background: #dcfce7;
+      color: #15803d;
     }
 
     .pill-yellow {
-      background: rgba(202, 138, 4, 0.25);
-      color: #facc15;
+      background: #fef9c3;
+      color: #854d0e;
     }
 
     .pill-red {
-      background: rgba(185, 28, 28, 0.25);
-      color: #fca5a5;
+      background: #fee2e2;
+      color: #b91c1c;
     }
 
     .summary-box {
       padding: 8px 10px;
       border-radius: 12px;
-      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.2), transparent),
-                  rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(34, 197, 94, 0.3);
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -264,12 +269,12 @@
 
     .summary-label {
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: #6b7280;
     }
 
     .summary-value {
       font-weight: 600;
-      color: #e5e7eb;
+      color: #111827;
     }
 
     /* Splash */
@@ -279,8 +284,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at top, #22c55e 0, transparent 50%),
-                  #020617;
+      background: radial-gradient(circle at top, #bbf7d0 0, transparent 55%),
+                  #f3f4f6;
       z-index: 50;
     }
 
@@ -288,11 +293,10 @@
       text-align: center;
       max-width: 360px;
       padding: 24px;
-      background: rgba(15, 23, 42, 0.85);
+      background: #ffffff;
       border-radius: 24px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(12px);
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     }
 
     .splash-logo {
@@ -301,8 +305,8 @@
       border-radius: 999px;
       margin: 0 auto 12px;
       overflow: hidden;
-      border: 2px solid rgba(148, 163, 184, 0.5);
-      background: #020617;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -318,7 +322,7 @@
       width: 100%;
       height: 8px;
       border-radius: 999px;
-      background: rgba(31, 41, 55, 0.9);
+      background: #e5e7eb;
       overflow: hidden;
       margin-top: 16px;
       position: relative;
@@ -328,18 +332,16 @@
       position: absolute;
       inset: 0;
       width: 0%;
-      background: linear-gradient(90deg, #22c55e, #a3e635);
+      background: linear-gradient(90deg, #16a34a, #22c55e);
       transition: width 0.15s linear;
     }
 
-    /* Login */
     #login-view {
       display: none;
       max-width: 400px;
       margin: 40px auto 0;
     }
 
-    /* Main app */
     #main-view {
       display: none;
     }
@@ -363,14 +365,14 @@
       font-size: 0.7rem;
       padding: 2px 6px;
       border-radius: 999px;
-      background: rgba(37, 99, 235, 0.18);
-      color: #93c5fd;
+      background: #e0f2fe;
+      color: #1d4ed8;
       width: fit-content;
     }
 
     .error-text {
       font-size: 0.8rem;
-      color: #f97373;
+      color: #b91c1c;
       margin-top: 4px;
     }
 
@@ -451,7 +453,7 @@
         </div>
 
         <p class="muted mt-4" style="font-size:0.75rem;">
-          Por ahora el login es local con usuarios definidos en el código.
+          Login local con usuarios definidos en el código.
         </p>
       </div>
     </div>
@@ -711,9 +713,27 @@
     </div>
   </div>
 
-  <script>
+  <!-- LOGIC + FIREBASE (MODULAR 12.x) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      where,
+      orderBy,
+      doc,
+      deleteDoc,
+      updateDoc,
+      serverTimestamp,
+      writeBatch,
+      limit
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
     // ==============================
-    // FIREBASE CONFIG (tu proyecto)
+    // FIREBASE CONFIG
     // ==============================
     const firebaseConfig = {
       apiKey: "AIzaSyB46C16u-mEszandRusDbpH15uItifNNRE",
@@ -724,17 +744,9 @@
       appId: "1:546945701628:web:a13fc5cbf836aaf04f2979"
     };
 
-    let app;
-    let db;
-
-    try {
-      app = firebase.initializeApp(firebaseConfig);
-      db = firebase.firestore();
-      console.log("Firebase inicializado OK");
-    } catch (err) {
-      console.error("Error inicializando Firebase:", err);
-      alert("Revisá la configuración de Firebase en el código.");
-    }
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    console.log("Firebase inicializado OK");
 
     // ==============================
     // LOGIN LOCAL
@@ -756,14 +768,14 @@
 
     let currentUser = null;
 
-    function fillDemoLogin() {
+    window.fillDemoLogin = function () {
       const select = document.getElementById("login-user-select");
       const passInput = document.getElementById("login-password");
       select.value = USERS[0].email;
       passInput.value = USERS[0].password;
-    }
+    };
 
-    function handleLogin() {
+    window.handleLogin = function () {
       const select = document.getElementById("login-user-select");
       const email = select.value;
       const password = document.getElementById("login-password").value.trim();
@@ -788,19 +800,19 @@
 
       loadDeposits();
       loadOperators();
-    }
+    };
 
-    function logout() {
+    window.logout = function () {
       currentUser = null;
       document.getElementById("main-view").style.display = "none";
       document.getElementById("login-view").style.display = "block";
       document.getElementById("login-password").value = "";
-    }
+    };
 
     // ==============================
     // TABS
     // ==============================
-    function showTab(tab) {
+    window.showTab = function (tab) {
       const tabs = ["deposits", "operators", "evaluations", "bonuses"];
       tabs.forEach((t) => {
         document.getElementById("tab-" + t).style.display = t === tab ? "block" : "none";
@@ -818,7 +830,7 @@
       } else if (tab === "evaluations") {
         loadDepositsIntoSelect("eval-deposit-select");
       }
-    }
+    };
 
     // ==============================
     // SPLASH
@@ -852,8 +864,7 @@
     // ==============================
     // DEPÓSITOS
     // ==============================
-    async function addDeposit() {
-      if (!db) return;
+    window.addDeposit = async function () {
       const nameInput = document.getElementById("deposit-name");
       const descInput = document.getElementById("deposit-description");
       const name = nameInput.value.trim();
@@ -865,10 +876,10 @@
       }
 
       try {
-        await db.collection("deposits").add({
+        await addDoc(collection(db, "deposits"), {
           name,
           description,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
         nameInput.value = "";
         descInput.value = "";
@@ -876,14 +887,15 @@
         alert("Depósito agregado.");
       } catch (err) {
         console.error("Error addDeposit:", err);
-        alert("Error guardando el depósito.");
+        alert("Error guardando el depósito (revisá reglas de Firestore).");
       }
-    }
+    };
 
     async function loadDeposits() {
-      if (!db) return;
       try {
-        const snapshot = await db.collection("deposits").orderBy("name").get();
+        const qRef = query(collection(db, "deposits"), orderBy("name"));
+        const snapshot = await getDocs(qRef);
+
         const listBody = document.getElementById("deposit-list");
         const selectQuestion = document.getElementById("question-deposit-select");
         const selectOperator = document.getElementById("operator-deposit-select");
@@ -894,9 +906,9 @@
         selectOperator.innerHTML = "";
         if (selectEval) selectEval.innerHTML = "";
 
-        snapshot.forEach((doc) => {
-          const d = doc.data();
-          const id = doc.id;
+        snapshot.forEach((document) => {
+          const d = document.data();
+          const id = document.id;
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
@@ -929,27 +941,25 @@
         selectQuestion.onchange = loadQuestionsForSelectedDeposit;
       } catch (err) {
         console.error("Error loadDeposits:", err);
-        alert("Error cargando depósitos.");
+        alert("Error cargando depósitos (revisá reglas de Firestore).");
       }
     }
 
-    async function deleteDeposit(id) {
-      if (!db) return;
+    window.deleteDeposit = async function (id) {
       if (!confirm("¿Seguro que querés borrar este depósito?")) return;
       try {
-        await db.collection("deposits").doc(id).delete();
+        await deleteDoc(doc(db, "deposits", id));
         await loadDeposits();
       } catch (err) {
         console.error("Error deleteDeposit:", err);
         alert("Error borrando depósito.");
       }
-    }
+    };
 
     // ==============================
     // PREGUNTAS
     // ==============================
-    async function addQuestion() {
-      if (!db) return;
+    window.addQuestion = async function () {
       const depositSelect = document.getElementById("question-deposit-select");
       const textInput = document.getElementById("question-text");
       const maxPointsInput = document.getElementById("question-max-points");
@@ -972,13 +982,13 @@
       }
 
       try {
-        await db.collection("questions").add({
+        await addDoc(collection(db, "questions"), {
           depositId,
           text,
           maxPoints,
           order: 0,
           active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
         textInput.value = "";
         maxPointsInput.value = "2";
@@ -987,10 +997,9 @@
         console.error("Error addQuestion:", err);
         alert("Error guardando la pregunta.");
       }
-    }
+    };
 
     async function loadQuestionsForSelectedDeposit() {
-      if (!db) return;
       const depositSelect = document.getElementById("question-deposit-select");
       const depositId = depositSelect.value;
       const tbody = document.getElementById("question-list");
@@ -999,14 +1008,16 @@
       if (!depositId) return;
 
       try {
-        const snapshot = await db.collection("questions")
-          .where("depositId", "==", depositId)
-          .orderBy("createdAt", "asc")
-          .get();
+        const qRef = query(
+          collection(db, "questions"),
+          where("depositId", "==", depositId),
+          orderBy("createdAt", "asc")
+        );
+        const snapshot = await getDocs(qRef);
 
-        snapshot.forEach((doc) => {
-          const q = doc.data();
-          const id = doc.id;
+        snapshot.forEach((document) => {
+          const q = document.data();
+          const id = document.id;
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${q.text}</td>
@@ -1021,23 +1032,21 @@
       }
     }
 
-    async function deleteQuestion(id) {
-      if (!db) return;
+    window.deleteQuestion = async function (id) {
       if (!confirm("¿Seguro que querés borrar esta pregunta?")) return;
       try {
-        await db.collection("questions").doc(id).delete();
+        await deleteDoc(doc(db, "questions", id));
         await loadQuestionsForSelectedDeposit();
       } catch (err) {
         console.error("Error deleteQuestion:", err);
         alert("Error borrando pregunta.");
       }
-    }
+    };
 
     // ==============================
     // OPERARIOS
     // ==============================
-    async function addOperator() {
-      if (!db) return;
+    window.addOperator = async function () {
       const nameInput = document.getElementById("operator-name");
       const depositSelect = document.getElementById("operator-deposit-select");
 
@@ -1054,11 +1063,11 @@
       }
 
       try {
-        await db.collection("operators").add({
+        await addDoc(collection(db, "operators"), {
           name,
           depositId,
           active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
         nameInput.value = "";
         await loadOperators();
@@ -1066,19 +1075,19 @@
         console.error("Error addOperator:", err);
         alert("Error guardando operario.");
       }
-    }
+    };
 
     async function loadDepositsIntoSelect(selectId) {
-      if (!db) return;
       try {
-        const snapshot = await db.collection("deposits").orderBy("name").get();
+        const qRef = query(collection(db, "deposits"), orderBy("name"));
+        const snapshot = await getDocs(qRef);
         const select = document.getElementById(selectId);
         if (!select) return;
         select.innerHTML = "";
-        snapshot.forEach((doc) => {
-          const d = doc.data();
+        snapshot.forEach((document) => {
+          const d = document.data();
           const opt = document.createElement("option");
-          opt.value = doc.id;
+          opt.value = document.id;
           opt.textContent = d.name;
           select.appendChild(opt);
         });
@@ -1088,53 +1097,52 @@
     }
 
     async function loadOperators() {
-      if (!db) return;
       try {
-        const depositsSnapshot = await db.collection("deposits").get();
+        // Map de depósitos
+        const depSnap = await getDocs(collection(db, "deposits"));
         const depositsMap = {};
-        depositsSnapshot.forEach((d) => {
+        depSnap.forEach((d) => {
           depositsMap[d.id] = d.data().name || "Depósito";
         });
 
-        const snapshot = await db.collection("operators").orderBy("name").get();
+        const qRef = query(collection(db, "operators"), orderBy("name"));
+        const snapshot = await getDocs(qRef);
         const tbody = document.getElementById("operator-list");
         tbody.innerHTML = "";
 
-        snapshot.forEach((doc) => {
-          const op = doc.data();
+        snapshot.forEach((document) => {
+          const op = document.data();
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${op.name}</td>
             <td>${depositsMap[op.depositId] || "-"}</td>
-            <td><button class="btn-small btn-danger" onclick="deleteOperator('${doc.id}')">Borrar</button></td>
+            <td><button class="btn-small btn-danger" onclick="deleteOperator('${document.id}')">Borrar</button></td>
           `;
           tbody.appendChild(tr);
         });
       } catch (err) {
         console.error("Error loadOperators:", err);
-        alert("Error cargando operarios.");
+        alert("Error cargando operarios (revisá reglas de Firestore).");
       }
     }
 
-    async function deleteOperator(id) {
-      if (!db) return;
+    window.deleteOperator = async function (id) {
       if (!confirm("¿Seguro que querés borrar este operario?")) return;
       try {
-        await db.collection("operators").doc(id).delete();
+        await deleteDoc(doc(db, "operators", id));
         await loadOperators();
       } catch (err) {
         console.error("Error deleteOperator:", err);
         alert("Error borrando operario.");
       }
-    }
+    };
 
     // ==============================
     // EVALUACIONES
     // ==============================
     let evalQuestionsCache = [];
 
-    async function loadQuestionsForEvaluation() {
-      if (!db) return;
+    window.loadQuestionsForEvaluation = async function () {
       const depositSelect = document.getElementById("eval-deposit-select");
       const monthInput = document.getElementById("eval-month");
       const depositId = depositSelect.value;
@@ -1150,10 +1158,12 @@
       }
 
       try {
-        const snapshot = await db.collection("questions")
-          .where("depositId", "==", depositId)
-          .orderBy("createdAt", "asc")
-          .get();
+        const qRef = query(
+          collection(db, "questions"),
+          where("depositId", "==", depositId),
+          orderBy("createdAt", "asc")
+        );
+        const snapshot = await getDocs(qRef);
 
         evalQuestionsCache = [];
         const tbody = document.getElementById("eval-question-rows");
@@ -1162,9 +1172,9 @@
         let totalPossible = 0;
         let index = 1;
 
-        snapshot.forEach((doc) => {
-          const q = doc.data();
-          const id = doc.id;
+        snapshot.forEach((document) => {
+          const q = document.data();
+          const id = document.id;
           evalQuestionsCache.push({ id, ...q });
           totalPossible += q.maxPoints;
 
@@ -1196,9 +1206,9 @@
         console.error("Error loadQuestionsForEvaluation:", err);
         alert("Error cargando preguntas para evaluación.");
       }
-    }
+    };
 
-    function recalculateEvaluation() {
+    window.recalculateEvaluation = function () {
       const inputs = document.querySelectorAll("#eval-question-rows input[type='number']");
       let totalObtained = 0;
       let totalPossible = 0;
@@ -1217,10 +1227,9 @@
       document.getElementById("summary-obtained").textContent = totalObtained.toFixed(2);
       document.getElementById("summary-possible").textContent = totalPossible.toFixed(2);
       document.getElementById("summary-percent").textContent = percent.toFixed(1) + "%";
-    }
+    };
 
-    async function saveEvaluation() {
-      if (!db) return;
+    window.saveEvaluation = async function () {
       const depositSelect = document.getElementById("eval-deposit-select");
       const monthInput = document.getElementById("eval-month");
       const depositId = depositSelect.value;
@@ -1269,18 +1278,18 @@
       const percent = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
 
       try {
-        const evalRef = await db.collection("evaluations").add({
+        const evalRef = await addDoc(collection(db, "evaluations"), {
           depositId,
           month,
           totalObtained,
           totalPossible,
           percent,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
 
-        const batch = db.batch();
+        const batch = writeBatch(db);
         answers.forEach((ans) => {
-          const ansRef = db.collection("evaluations").doc(evalRef.id).collection("answers").doc();
+          const ansRef = doc(collection(db, "evaluations", evalRef.id, "answers"));
           batch.set(ansRef, ans);
         });
         await batch.commit();
@@ -1290,13 +1299,12 @@
         console.error("Error saveEvaluation:", err);
         alert("Error guardando evaluación.");
       }
-    }
+    };
 
     // ==============================
     // PREMIOS
     // ==============================
-    async function loadBonuses() {
-      if (!db) return;
+    window.loadBonuses = async function () {
       const monthInput = document.getElementById("bonus-month");
       const month = monthInput.value;
       if (!month) {
@@ -1305,25 +1313,24 @@
       }
 
       try {
-        const depositsSnapshot = await db.collection("deposits").get();
+        const depSnap = await getDocs(collection(db, "deposits"));
         const depositsMap = {};
-        depositsSnapshot.forEach((d) => {
+        depSnap.forEach((d) => {
           depositsMap[d.id] = d.data().name || "Depósito";
         });
 
-        const operatorsSnapshot = await db.collection("operators").get();
+        const operatorsSnap = await getDocs(collection(db, "operators"));
         const operators = [];
-        operatorsSnapshot.forEach((doc) => {
-          operators.push({ id: doc.id, ...doc.data() });
+        operatorsSnap.forEach((docu) => {
+          operators.push({ id: docu.id, ...docu.data() });
         });
 
-        const evalsSnapshot = await db.collection("evaluations")
-          .where("month", "==", month)
-          .get();
-
+        const evalsSnap = await getDocs(
+          query(collection(db, "evaluations"), where("month", "==", month))
+        );
         const evalsByDeposit = {};
-        evalsSnapshot.forEach((doc) => {
-          const e = doc.data();
+        evalsSnap.forEach((docu) => {
+          const e = docu.data();
           const depId = e.depositId;
           const existing = evalsByDeposit[depId];
           if (!existing || (existing.createdAt && e.createdAt && e.createdAt.toMillis() > existing.createdAt.toMillis())) {
@@ -1331,13 +1338,12 @@
           }
         });
 
-        const bonusesSnapshot = await db.collection("bonuses")
-          .where("month", "==", month)
-          .get();
-
+        const bonusesSnap = await getDocs(
+          query(collection(db, "bonuses"), where("month", "==", month))
+        );
         const bonusMap = {};
-        bonusesSnapshot.forEach((doc) => {
-          const b = doc.data();
+        bonusesSnap.forEach((docu) => {
+          const b = docu.data();
           bonusMap[b.operatorId] = b;
         });
 
@@ -1397,10 +1403,9 @@
         console.error("Error loadBonuses:", err);
         alert("Error cargando premios.");
       }
-    }
+    };
 
-    async function saveBonusForOperator(operatorId) {
-      if (!db) return;
+    window.saveBonusForOperator = async function (operatorId) {
       const monthInput = document.getElementById("bonus-month");
       const month = monthInput.value;
       if (!month) {
@@ -1418,23 +1423,23 @@
       }
 
       try {
-        const existingSnapshot = await db.collection("bonuses")
-          .where("operatorId", "==", operatorId)
-          .where("month", "==", month)
-          .limit(1)
-          .get();
+        const qRef = query(
+          collection(db, "bonuses"),
+          where("operatorId", "==", operatorId),
+          where("month", "==", month),
+          limit(1)
+        );
+        const snap = await getDocs(qRef);
 
-        if (!existingSnapshot.empty) {
-          const docId = existingSnapshot.docs[0].id;
-          await db.collection("bonuses").doc(docId).update({
-            baseAmount
-          });
+        if (!snap.empty) {
+          const docId = snap.docs[0].id;
+          await updateDoc(doc(db, "bonuses", docId), { baseAmount });
         } else {
-          await db.collection("bonuses").add({
+          await addDoc(collection(db, "bonuses"), {
             operatorId,
             month,
             baseAmount,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: serverTimestamp()
           });
         }
 
@@ -1443,7 +1448,8 @@
         console.error("Error saveBonusForOperator:", err);
         alert("Error guardando premio.");
       }
-    }
+    };
   </script>
 </body>
 </html>
+
