@@ -1060,10 +1060,10 @@
       if (!depositId) return;
 
       try {
+        // SIN orderBy → no requiere índice compuesto
         const qRef = query(
           collection(db, "questions"),
-          where("depositId", "==", depositId),
-          orderBy("createdAt", "asc")
+          where("depositId", "==", depositId)
         );
         const snapshot = await getDocs(qRef);
 
@@ -1216,10 +1216,10 @@
       }
 
       try {
+        // SIN orderBy → no requiere índice compuesto
         const qRef = query(
           collection(db, "questions"),
-          where("depositId", "==", depositId),
-          orderBy("createdAt", "asc")
+          where("depositId", "==", depositId)
         );
         const snapshot = await getDocs(qRef);
 
@@ -1521,3 +1521,4 @@
   </script>
 </body>
 </html>
+
