@@ -386,6 +386,24 @@
       overflow-y: auto;
     }
 
+    /* Cartel sincronización */
+    #sync-status {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #111827;
+      color: #f9fafb;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      border: 1px solid #e5e7eb;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 60;
+    }
+
     @media (max-width: 768px) {
       body {
         align-items: flex-start;
@@ -713,6 +731,9 @@
     </div>
   </div>
 
+  <!-- Cartel de sincronización -->
+  <div id="sync-status">Sincronizando con Firebase...</div>
+
   <!-- LÓGICA + FIREBASE (MODULAR 12.x) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -747,6 +768,22 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app, { ignoreUndefinedProperties: true });
     console.log("Firebase inicializado OK");
+
+    // Helpers de sincronización
+    function showSync(message = "Sincronizando con Firebase...") {
+      const el = document.getElementById("sync-status");
+      if (!el) return;
+      el.textContent = message;
+      el.style.opacity = "1";
+      el.style.pointerEvents = "auto";
+    }
+
+    function hideSync() {
+      const el = document.getElementById("sync-status");
+      if (!el) return;
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+    }
 
     // ==============================
     // LOGIN LOCAL
@@ -876,6 +913,7 @@
       }
 
       try {
+        showSync("Sincronizando depósito con Firebase...");
         await addDoc(collection(db, "deposits"), {
           name,
           description,
@@ -888,13 +926,16 @@
       } catch (err) {
         console.error("Error addDeposit:", err);
         alert("Error guardando el depósito (revisá reglas de Firestore).");
+      } finally {
+        hideSync();
       }
     };
 
     async function loadDeposits() {
       try {
-        const qRef = query(collection(db, "deposits"), orderBy("name"));
-        const snapshot = await getDocs(qRef);
+        console.log("loadDeposits() → leyendo colección 'deposits'");
+        const snapshot = await getDocs(collection(db, "deposits"));
+        console.log("loadDeposits() → docs encontrados:", snapshot.size);
 
         const listBody = document.getElementById("deposit-list");
         const selectQuestion = document.getElementById("question-deposit-select");
@@ -910,9 +951,11 @@
           const d = snapDoc.data();
           const id = snapDoc.id;
 
+          console.log("→ Depósito leído:", id, d);
+
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${d.name}</td>
+            <td>${d.name || "(sin nombre)"}</td>
             <td>
               <button class="btn-small btn-danger" onclick="deleteDeposit('${id}')">Borrar</button>
             </td>
@@ -921,38 +964,44 @@
 
           const opt1 = document.createElement("option");
           opt1.value = id;
-          opt1.textContent = d.name;
+          opt1.textContent = d.name || "(sin nombre)";
           selectQuestion.appendChild(opt1);
 
           const opt2 = document.createElement("option");
           opt2.value = id;
-          opt2.textContent = d.name;
+          opt2.textContent = d.name || "(sin nombre)";
           selectOperator.appendChild(opt2);
 
           if (selectEval) {
             const opt3 = document.createElement("option");
             opt3.value = id;
-            opt3.textContent = d.name;
+            opt3.textContent = d.name || "(sin nombre)";
             selectEval.appendChild(opt3);
           }
         });
 
-        loadQuestionsForSelectedDeposit();
-        selectQuestion.onchange = loadQuestionsForSelectedDeposit;
+        if (snapshot.size > 0) {
+          loadQuestionsForSelectedDeposit();
+          document.getElementById("question-deposit-select").onchange =
+            loadQuestionsForSelectedDeposit;
+        }
       } catch (err) {
         console.error("Error loadDeposits:", err);
-        alert("Error cargando depósitos (revisá reglas de Firestore).");
+        alert("Error cargando depósitos (mirá la consola para más detalle).");
       }
     }
 
     window.deleteDeposit = async function (id) {
       if (!confirm("¿Seguro que querés borrar este depósito?")) return;
       try {
+        showSync("Eliminando depósito...");
         await deleteDoc(doc(db, "deposits", id));
         await loadDeposits();
       } catch (err) {
         console.error("Error deleteDeposit:", err);
         alert("Error borrando depósito.");
+      } finally {
+        hideSync();
       }
     };
 
@@ -982,6 +1031,7 @@
       }
 
       try {
+        showSync("Sincronizando pregunta con Firebase...");
         await addDoc(collection(db, "questions"), {
           depositId,
           text,
@@ -996,6 +1046,8 @@
       } catch (err) {
         console.error("Error addQuestion:", err);
         alert("Error guardando la pregunta.");
+      } finally {
+        hideSync();
       }
     };
 
@@ -1035,11 +1087,14 @@
     window.deleteQuestion = async function (id) {
       if (!confirm("¿Seguro que querés borrar esta pregunta?")) return;
       try {
+        showSync("Eliminando pregunta...");
         await deleteDoc(doc(db, "questions", id));
         await loadQuestionsForSelectedDeposit();
       } catch (err) {
         console.error("Error deleteQuestion:", err);
         alert("Error borrando pregunta.");
+      } finally {
+        hideSync();
       }
     };
 
@@ -1063,6 +1118,7 @@
       }
 
       try {
+        showSync("Sincronizando operario con Firebase...");
         await addDoc(collection(db, "operators"), {
           name,
           depositId,
@@ -1074,13 +1130,14 @@
       } catch (err) {
         console.error("Error addOperator:", err);
         alert("Error guardando operario.");
+      } finally {
+        hideSync();
       }
     };
 
     async function loadDepositsIntoSelect(selectId) {
       try {
-        const qRef = query(collection(db, "deposits"), orderBy("name"));
-        const snapshot = await getDocs(qRef);
+        const snapshot = await getDocs(collection(db, "deposits"));
         const select = document.getElementById(selectId);
         if (!select) return;
         select.innerHTML = "";
@@ -1088,7 +1145,7 @@
           const d = snapDoc.data();
           const opt = document.createElement("option");
           opt.value = snapDoc.id;
-          opt.textContent = d.name;
+          opt.textContent = d.name || "(sin nombre)";
           select.appendChild(opt);
         });
       } catch (err) {
@@ -1104,8 +1161,7 @@
           depositsMap[dSnap.id] = dSnap.data().name || "Depósito";
         });
 
-        const qRef = query(collection(db, "operators"), orderBy("name"));
-        const snapshot = await getDocs(qRef);
+        const snapshot = await getDocs(query(collection(db, "operators"), orderBy("name")));
         const tbody = document.getElementById("operator-list");
         tbody.innerHTML = "";
 
@@ -1128,11 +1184,14 @@
     window.deleteOperator = async function (id) {
       if (!confirm("¿Seguro que querés borrar este operario?")) return;
       try {
+        showSync("Eliminando operario...");
         await deleteDoc(doc(db, "operators", id));
         await loadOperators();
       } catch (err) {
         console.error("Error deleteOperator:", err);
         alert("Error borrando operario.");
+      } finally {
+        hideSync();
       }
     };
 
@@ -1276,6 +1335,8 @@
 
       const percent = totalPossible > 0 ? (totalObtained / totalPossible) * 100 : 0;
 
+      showSync("Sincronizando evaluación con Firebase...");
+
       try {
         const evalRef = await addDoc(collection(db, "evaluations"), {
           depositId,
@@ -1297,6 +1358,8 @@
       } catch (err) {
         console.error("Error saveEvaluation:", err);
         alert("Error guardando evaluación.");
+      } finally {
+        hideSync();
       }
     };
 
@@ -1424,6 +1487,8 @@
         return;
       }
 
+      showSync("Sincronizando premio con Firebase...");
+
       try {
         const qRef = query(
           collection(db, "bonuses"),
@@ -1449,10 +1514,11 @@
       } catch (err) {
         console.error("Error saveBonusForOperator:", err);
         alert("Error guardando premio.");
+      } finally {
+        hideSync();
       }
     };
   </script>
 </body>
 </html>
-
 
